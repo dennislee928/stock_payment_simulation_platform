@@ -2,12 +2,18 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss"],
+  css: ["ant-design-vue/dist/antd.css"],
   runtimeConfig: {
     public: {
       ecpayMerchantId: process.env.ECPAY_MERCHANT_ID,
       ecpayHashKey: process.env.ECPAY_HASH_KEY,
       ecpayHashIV: process.env.ECPAY_HASH_IV,
       twseApiBase: process.env.TWSE_API_BASE,
+    },
+  },
+  vite: {
+    define: {
+      "process.env": {},
     },
   },
   app: {
