@@ -1,0 +1,29 @@
+name = "cf-worker-backend"
+main = "dist/index.js"
+compatibility_date = "2024-04-20"
+compatibility_flags = ["nodejs_compat"]
+
+[build]
+command = "npm run build"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "stock_orders"
+database_id = "PLACEHOLDER_DB_ID" # 請替換為實際的 database_id
+
+# 環境變數
+[vars]
+TWSE_API_BASE = "https://openapi.twse.com.tw"
+
+# 開發環境設定
+[env.dev]
+vars = { ENVIRONMENT = "development" }
+
+# 生產環境設定
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# 設定 CORS
+[route]
+pattern = "/api/*"
+cors = true
