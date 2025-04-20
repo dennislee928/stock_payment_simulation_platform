@@ -4,10 +4,11 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
     "generate": "nuxt generate --no-prerender",
     "preview": "nuxt preview",
-    "prepare": "node vercel-build-prepare.js",
-    "postinstall": "nuxt prepare"
+    "prepare": "node vercel-build-prepare.js"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.5.1",

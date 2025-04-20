@@ -113,6 +113,11 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
 
+      - name: Tailwind Init & Nuxt Prepare
+        run: |
+          npx tailwindcss init -p || true
+          npx nuxt prepare
+
       - name: Setup Tailwind CSS
         run: |
           mkdir -p assets/css

@@ -9,6 +9,7 @@ import { OrdersController } from './controllers/orders.controller';
 import { StocksService } from './services/stocks.service';
 import { OrdersService } from './services/orders.service';
 import { D1Service } from './d1/d1.service';
+import { CreateOrderDto, UpdateOrderStatusDto } from './services/orders.service';
 
 // 創建路由器
 const router = Router();
@@ -80,7 +81,7 @@ export default {
 		// 訂單相關
 		router.post(`${API_PREFIX}/orders`, async (req) => {
 			try {
-				const body = await req.json();
+				const body = (await req.json()) as CreateOrderDto;
 				const result = await ordersController.createOrder(body);
 				return new Response(JSON.stringify(result), {
 					headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -121,7 +122,7 @@ export default {
 		router.put(`${API_PREFIX}/orders/:id/status`, async (req) => {
 			try {
 				const { id } = req.params;
-				const body = await req.json();
+				const body = (await req.json()) as UpdateOrderStatusDto;
 				const result = await ordersController.updateOrderStatus(id, body);
 				return new Response(JSON.stringify(result), {
 					headers: { 'Content-Type': 'application/json', ...corsHeaders },
