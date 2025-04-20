@@ -41,7 +41,7 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
-    // 檢查本地存儲中是否有令牌（用於持久登入狀態）
+    // 檢查本地存儲中是否有token（用於持久登入狀態）
     checkAuth() {
       if (process.client) {
         const token = localStorage.getItem("auth_token");
