@@ -39,15 +39,37 @@ echo -e "${YELLOW}步驟 3: 檢查必要的檔案...${NC}"
 
 if [ "$DEPLOY_DIR" = ".output" ]; then
   # 確保有 index.html
-  if [ ! -f ".output/public/index.html" ] && [ -f ".output/_worker.js/index.js" ]; then
+  if [ ! -f ".output/public/index.html" ] && [ -f ".output/_worker.js" ]; then
     echo -e "${YELLOW}使用 Worker 模式進行部署${NC}"
   fi
 fi
 
 # 步驟 4: 部署到 Cloudflare Pages
 echo -e "${YELLOW}步驟 4: 開始部署到 Cloudflare Pages...${NC}"
-echo -e "${YELLOW}部署目錄: $DEPLOY_DIR${NC}"
-npx wrangler pages deploy "$DEPLOY_DIR" || handle_error "部署失敗"
+
+# 從 .env 檔案中讀取環境變數
+if [ -f ".env" ]; then
+  echo -e "${YELLOW}從 .env 檔案讀取環境變數${NC}"
+  # 儲存環境變數到臨時檔案
+  ENV_FILE=$(mktemp)
+  grep -v '^#' .env | grep -v '^$' > "$ENV_FILE"
+  
+  # 讀取環境變數並建立命令字串
+  ENV_VARS=""
+  while IFS= read -r line; do
+    KEY=$(echo "$line" | cut -d= -f1)
+    VALUE=$(echo "$line" | cut -d= -f2-)
+    ENV_VARS="$ENV_VARS --env $KEY=\"$VALUE\""
+  done < "$ENV_FILE"
+  
+  rm "$ENV_FILE"
+  
+  echo -e "${YELLOW}部署目錄: $DEPLOY_DIR 並設定環境變數${NC}"
+  eval "npx wrangler pages deploy \"$DEPLOY_DIR\" $ENV_VARS" || handle_error "部署失敗"
+else
+  echo -e "${YELLOW}部署目錄: $DEPLOY_DIR (未找到 .env 檔案)${NC}"
+  npx wrangler pages deploy "$DEPLOY_DIR" || handle_error "部署失敗"
+fi
 
 # 步驟 5: 顯示專案列表
 echo -e "${YELLOW}步驟 5: 顯示 Cloudflare Pages 專案列表...${NC}"
