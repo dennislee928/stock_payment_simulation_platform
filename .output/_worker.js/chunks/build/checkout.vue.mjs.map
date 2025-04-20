@@ -1,1 +1,0 @@
-{"version":3,"file":"checkout.vue.mjs","sources":["../../../../pages/checkout.vue"],"sourcesContent":null,"names":["items","formattedTotal","useCart","loading","ref","error","formData","name","email","phone","paymentMethod"],"mappings":"uPAIA,MAAMA,MAAEA,EAAAC,eAAoBA,GAAqCC,IAC3DC,EAAUC,OAAI,GACdC,EAAQD,MAAmB,MAG3BE,EAAWF,EAAAA,IAAI,CACnBG,KAAM,GACNC,MAAO,GACPC,MAAO,GACPC,cAAe"}
