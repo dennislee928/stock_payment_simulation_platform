@@ -5,8 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-      - main
-  workflow_dispatch:
     inputs:
       environment:
         description: "部署環境"
@@ -82,8 +80,6 @@ packageJson.scripts['test:ui'] = 'vitest --ui';
 
 delete packageJson.scripts.preinstall;
 
-fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
-JS_EOF
 fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
 JS_EOF
 
