@@ -50,22 +50,24 @@ echo -e "${YELLOW}步驟 4: 開始部署到 Cloudflare Pages...${NC}"
 # 從 .env 檔案中讀取環境變數
 if [ -f ".env" ]; then
   echo -e "${YELLOW}從 .env 檔案讀取環境變數${NC}"
-  # 儲存環境變數到臨時檔案
-  ENV_FILE=$(mktemp)
-  grep -v '^#' .env | grep -v '^$' > "$ENV_FILE"
   
-  # 讀取環境變數並建立命令字串
-  ENV_VARS=""
-  while IFS= read -r line; do
-    KEY=$(echo "$line" | cut -d= -f1)
-    VALUE=$(echo "$line" | cut -d= -f2-)
-    ENV_VARS="$ENV_VARS --env $KEY=\"$VALUE\""
-  done < "$ENV_FILE"
+  # 讀取環境變數並建立命令
+  DEPLOY_CMD="npx wrangler pages deploy \"$DEPLOY_DIR\""
   
-  rm "$ENV_FILE"
+  while IFS='=' read -r KEY VALUE || [ -n "$KEY" ]; do
+    # 跳過空行和註解
+    [[ -z "$KEY" || "$KEY" =~ ^# ]] && continue
+    
+    # 清理可能的引號
+    VALUE=$(echo "$VALUE" | sed -e 's/^"//' -e 's/"$//')
+    
+    # 添加每個環境變數作為單獨的 --env 參數
+    DEPLOY_CMD="$DEPLOY_CMD --env $KEY=\"$VALUE\""
+  done < .env
   
   echo -e "${YELLOW}部署目錄: $DEPLOY_DIR 並設定環境變數${NC}"
-  eval "npx wrangler pages deploy \"$DEPLOY_DIR\" $ENV_VARS" || handle_error "部署失敗"
+  # 執行構建的命令
+  eval "$DEPLOY_CMD" || handle_error "部署失敗"
 else
   echo -e "${YELLOW}部署目錄: $DEPLOY_DIR (未找到 .env 檔案)${NC}"
   npx wrangler pages deploy "$DEPLOY_DIR" || handle_error "部署失敗"
