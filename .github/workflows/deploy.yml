@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "18.20.8"
           cache: "npm"
 
       # 解決 Rollup 依賴問題
@@ -67,9 +67,7 @@ jobs:
           rm temp-fix.js
 
       - name: Install Dependencies
-        run: |
-          npm install -g npm@latest
-          npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
 
@@ -151,12 +149,29 @@ jobs:
           echo "== .output/public directory =="
           ls -la .output/public || echo "No .output/public directory"
 
-      - name: Upload to Cloudflare Pages
+      # 手動處理 Cloudflare 部署（如果 pages-action 有問題）
+      - name: Manual Cloudflare Pages Deployment
+        run: |
+          echo "安裝相容版本的 wrangler..."
+          npm i -g wrangler@3
+
+          echo "使用 wrangler 直接部署..."
+          wrangler pages deploy .output/public \
+            --project-name="${{ secrets.CLOUDFLARE_PROJECT_NAME }}" \
+            --branch="main" \
+            --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        continue-on-error: true
+
+      # 如果手動部署失敗，嘗試使用 pages-action
+      - name: Upload to Cloudflare Pages (Fallback)
+        if: ${{ failure() }}
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
           directory: .output/public
-          # 使用最新的 wrangler 版本
-          wranglerVersion: 4
+          wranglerVersion: 3
