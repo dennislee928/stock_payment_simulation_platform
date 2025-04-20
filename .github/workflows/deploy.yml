@@ -115,18 +115,16 @@ jobs:
           EOT
           fi
 
-      - name: Ensure sass-embedded is installed
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Force Install sass-embedded
         run: npm install -D sass-embedded
 
-      - name: Build Nuxt Application
-        run: npm run build
-
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
-          directory: .output/public
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          accountId: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: pages deploy .output/public --project-name=stock-payment-simulation-platform --commit-dirty=true
+
