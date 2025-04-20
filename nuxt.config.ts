@@ -1,9 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  nitro: {
-    preset: "cloudflare-pages",
-  },
   modules: ["@pinia/nuxt"],
   css: [
     "~/assets/css/main.css",
@@ -44,6 +41,17 @@ export default defineNuxtConfig({
       dir: ".output",
       publicDir: ".output/public",
     },
+    routeRules: {
+      "/**": { prerender: true },
+    },
+    prerender: {
+      crawlLinks: true,
+      routes: ["/"],
+    },
+  },
+  ssr: true,
+  experimental: {
+    payloadExtraction: false,
   },
   app: {
     head: {

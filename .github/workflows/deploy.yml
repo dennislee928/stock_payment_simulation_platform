@@ -146,6 +146,50 @@ jobs:
             exit 1
           fi
 
+      - name: Fix missing index.html and create routes config
+        if: steps.check_output.outputs.output_exists == 'true'
+        run: |
+          # 檢查是否存在 index.html
+          if [ ! -f ".output/public/index.html" ]; then
+            echo "未找到 index.html，創建 _routes.json 和 index.html 文件..."
+            
+            # 創建 _routes.json 以處理 SPA 路由
+            cat > .output/public/_routes.json << EOF
+          {
+            "version": 1,
+            "include": ["/*"],
+            "exclude": [],
+            "routes": [
+              { "src": "/", "dest": "/index.html" }
+            ]
+          }
+          EOF
+            
+            # 找到入口 JS 文件
+            ENTRY_FILE=$(find .output/public/_nuxt -name "entry.*.js" | head -n 1 | xargs basename)
+            ENTRY_CSS=$(find .output/public/_nuxt -name "entry.*.css" | head -n 1 | xargs basename 2>/dev/null)
+            
+            # 創建基本的 index.html
+            cat > .output/public/index.html << EOF
+          <!DOCTYPE html>
+          <html lang="zh-TW">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>股票付款模擬平台</title>
+            $([ -n "$ENTRY_CSS" ] && echo "<link rel=\"stylesheet\" href=\"/_nuxt/$ENTRY_CSS\">")
+          </head>
+          <body>
+            <div id="__nuxt"></div>
+            <script type="module" src="/_nuxt/${ENTRY_FILE}"></script>
+          </body>
+          </html>
+          EOF
+            echo "已創建必要的文件！"
+          else
+            echo "index.html 已存在，不需創建。"
+          fi
+
       - name: Deploy to Cloudflare Pages
         if: steps.check_output.outputs.output_exists == 'true'
         uses: cloudflare/wrangler-action@v3
