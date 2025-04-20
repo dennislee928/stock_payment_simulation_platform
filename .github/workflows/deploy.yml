@@ -23,12 +23,49 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: "npm"
+
+      # 解決 Rollup 依賴問題
+      - name: Setup Rollup WebAssembly
+        run: |
+          # 刪除舊的文件
+          rm -rf node_modules package-lock.json || true
+
+          # 修改 package.json 改為只使用 wasm 版本的 rollup
+          cat <<EOF > temp-fix.js
+          const fs = require('fs');
+          const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+
+          // 添加 @rollup/wasm-node 到 devDependencies
+          packageJson.devDependencies = packageJson.devDependencies || {};
+          packageJson.devDependencies['@rollup/wasm-node'] = '^4.13.0';
+
+          // 確保有 resolutions 區塊
+          packageJson.resolutions = packageJson.resolutions || {};
+          packageJson.resolutions['rollup'] = 'npm:@rollup/wasm-node';
+
+          // 修改 build 腳本，跳過 vercel-build-prepare.js
+          packageJson.scripts.build = 'nuxt build';
+          packageJson.scripts.postinstall = 'nuxt prepare';
+
+          // 刪除不必要的 scripts
+          delete packageJson.scripts.preinstall;
+
+          fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
+          EOF
+
+          node temp-fix.js
+          rm temp-fix.js
 
       - name: Install Dependencies
         run: npm install
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
 
       - name: Build Nuxt 3 Project
         run: npm run build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
 
       - name: Upload to Cloudflare Pages
         uses: cloudflare/pages-action@v1
