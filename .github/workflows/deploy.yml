@@ -39,7 +39,7 @@ jobs:
           # 創建 tailwind.config.js 文件（如果不存在）
           if [ ! -f "tailwind.config.js" ]; then
             echo "創建 tailwind.config.js..."
-            cat <<EOF > tailwind.config.js
+            cat > tailwind.config.js << 'TAILWIND_EOF'
             /** @type {import('tailwindcss').Config} */
             module.exports = {
               content: [
@@ -55,11 +55,11 @@ jobs:
               },
               plugins: [],
             }
-            EOF
+            TAILWIND_EOF
           fi
 
           # 修改 package.json
-          cat <<EOF > package-fix.js
+          cat > package-fix.js << 'JS_EOF'
           const fs = require('fs');
           const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 
@@ -70,6 +70,9 @@ jobs:
           packageJson.devDependencies['postcss'] = '^8.4.33';
           packageJson.devDependencies['autoprefixer'] = '^10.4.17';
           packageJson.devDependencies['@rollup/wasm-node'] = '^4.13.0';
+          packageJson.devDependencies['vitest'] = '^1.1.0';
+          packageJson.devDependencies['@vitejs/plugin-vue'] = '^5.0.0';
+          packageJson.devDependencies['@vitest/ui'] = '^1.1.0';
 
           # 確保有 overrides 和 resolutions
           packageJson.resolutions = packageJson.resolutions || {};
@@ -78,15 +81,17 @@ jobs:
           packageJson.overrides = packageJson.overrides || {};
           packageJson.overrides['rollup'] = 'npm:@rollup/wasm-node';
 
-          # 修改 build 腳本，跳過 vercel-build-prepare.js
+          # 修改 build 腳本，添加 vitest 相關配置
           packageJson.scripts.build = 'nuxt build';
           packageJson.scripts.postinstall = 'npx tailwindcss init -p && nuxt prepare';
+          packageJson.scripts.test = 'vitest';
+          packageJson.scripts['test:ui'] = 'vitest --ui';
 
           # 刪除不必要的 scripts
           delete packageJson.scripts.preinstall;
 
           fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
-          EOF
+          JS_EOF
 
           node package-fix.js
           rm package-fix.js
@@ -94,14 +99,48 @@ jobs:
           # 創建 postcss.config.js (如果需要)
           if [ ! -f "postcss.config.js" ]; then
             echo "創建 postcss.config.js..."
-            cat <<EOF > postcss.config.js
+            cat > postcss.config.js << 'POSTCSS_EOF'
             module.exports = {
               plugins: {
                 tailwindcss: {},
                 autoprefixer: {},
               },
             }
-            EOF
+            POSTCSS_EOF
+          fi
+
+          # 創建 vitest.config.ts (支援 Vitest 測試和打包)
+          if [ ! -f "vitest.config.ts" ]; then
+            echo "創建 vitest.config.ts..."
+            cat > vitest.config.ts << 'VITEST_EOF'
+            import { defineConfig } from 'vitest/config'
+            import vue from '@vitejs/plugin-vue'
+
+            export default defineConfig({
+              plugins: [vue()],
+              test: {
+                environment: 'jsdom',
+                include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
+                exclude: ['node_modules', 'dist', '.nuxt', '.output'],
+              },
+              build: {
+                target: 'esnext',
+                outDir: 'dist',
+                emptyOutDir: true,
+                rollupOptions: {
+                  input: {
+                    main: './main.ts',
+                  },
+                  output: {
+                    format: 'esm',
+                    entryFileNames: '[name].[hash].js',
+                    chunkFileNames: '[name].[hash].js',
+                    assetFileNames: '[name].[hash].[ext]',
+                  },
+                },
+              },
+            })
+            VITEST_EOF
           fi
 
       # 安裝依賴
@@ -110,10 +149,10 @@ jobs:
           echo "正在安裝依賴..."
           npm install
 
-          # 確保 TailwindCSS 已經安裝
-          if [ ! -d "node_modules/tailwindcss" ]; then
-            echo "手動安裝 TailwindCSS..."
-            npm install -D tailwindcss postcss autoprefixer @nuxtjs/tailwindcss
+          # 確保 TailwindCSS 和 Vitest 已經安裝
+          if [ ! -d "node_modules/tailwindcss" ] || [ ! -d "node_modules/vitest" ]; then
+            echo "手動安裝 TailwindCSS 和 Vitest..."
+            npm install -D tailwindcss postcss autoprefixer @nuxtjs/tailwindcss vitest @vitejs/plugin-vue @vitest/ui
             npx tailwindcss init -p
           fi
         env:
@@ -128,11 +167,11 @@ jobs:
           # 在主 CSS 文件中添加 tailwind 指令
           if [ ! -f "assets/css/main.css" ]; then
             echo "創建 main.css 並加入 Tailwind 指令..."
-            cat <<EOF > assets/css/main.css
+            cat > assets/css/main.css << 'CSS_EOF'
             @tailwind base;
             @tailwind components;
             @tailwind utilities;
-            EOF
+            CSS_EOF
           else
             # 檢查現有 CSS 文件中是否已有 tailwind 指令
             if ! grep -q "@tailwind" assets/css/main.css; then
@@ -140,6 +179,17 @@ jobs:
               sed -i '1i@tailwind base;\n@tailwind components;\n@tailwind utilities;\n' assets/css/main.css
             fi
           fi
+
+      # 嘗試運行測試 (如果有)
+      - name: Run Tests
+        run: |
+          if [ -d "tests" ] || [ -d "test" ]; then
+            echo "運行測試..."
+            npm test || echo "測試失敗，但繼續構建流程"
+          else
+            echo "沒有找到測試目錄，跳過測試步驟"
+          fi
+        continue-on-error: true
 
       # 構建 Nuxt 應用
       - name: Build Nuxt Application
@@ -159,7 +209,7 @@ jobs:
             cp -r public/* .output/public/ 2>/dev/null || true
             
             echo "創建備用首頁..."
-            cat <<EOF > .output/public/index.html
+            cat > .output/public/index.html << 'HTML_EOF'
             <!DOCTYPE html>
             <html>
             <head>
@@ -180,7 +230,7 @@ jobs:
               </div>
             </body>
             </html>
-            EOF
+            HTML_EOF
           fi
 
           echo "輸出目錄內容:"
