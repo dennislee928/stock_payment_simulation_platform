@@ -14,9 +14,9 @@ handle_error() {
   exit 1
 }
 
-# 步驟 1: 清理構建環境
-echo -e "${YELLOW}步驟 1: 清理構建環境...${NC}"
-rm -rf .nuxt .output node_modules/.vite
+# 步驟 1: 強制清理構建環境 (使用 sudo 和 -rf 標誌強制刪除)
+echo -e "${YELLOW}步驟 1: 強制清理構建環境...${NC}"
+rm -rf .nuxt .output dist node_modules/.vite
 echo -e "${GREEN}構建環境已清理！${NC}"
 
 # 步驟 2: 構建專案
@@ -26,29 +26,27 @@ echo -e "${GREEN}構建成功完成！${NC}"
 
 # 步驟 3: 檢查輸出目錄
 echo -e "${YELLOW}步驟 3: 檢查輸出目錄...${NC}"
-
-# 檢查目錄結構
 if [ -d ".output/public" ]; then
   DEPLOY_DIR=".output/public"
   echo -e "${GREEN}找到標準輸出目錄 .output/public${NC}"
 elif [ -d ".output" ]; then
-  # Cloudflare Pages 預設可能只需要 .output 目錄
   DEPLOY_DIR=".output"
   echo -e "${YELLOW}使用 .output 作為部署目錄${NC}"
 else
   handle_error "未找到可部署的輸出目錄"
 fi
 
-# 步驟 4: 部署到 Cloudflare Pages - 不嘗試傳遞環境變數
+# 步驟 4: 部署到 Cloudflare Pages (不嘗試設定環境變數)
 echo -e "${YELLOW}步驟 4: 開始部署到 Cloudflare Pages...${NC}"
 echo -e "${YELLOW}部署目錄: $DEPLOY_DIR${NC}"
 npx wrangler pages deploy "$DEPLOY_DIR" || handle_error "部署失敗"
 
 # 步驟 5: 部署完成提示
-echo -e "${GREEN}部署流程完成！您的網站已成功部署到 Cloudflare Pages。${NC}"
-echo -e "${YELLOW}重要提示：請在 Cloudflare 儀表板設定以下環境變數：${NC}"
-echo -e "${YELLOW}1. TWSE_API_BASE = https://openapi.twse.com.tw${NC}"
-echo -e "${YELLOW}2. ECPAY_MERCHANT_ID = 2000132${NC}"
-echo -e "${YELLOW}3. ECPAY_HASH_KEY = 5294y06JbISpM5x9${NC}"
-echo -e "${YELLOW}4. ECPAY_HASH_IV = v77hoKGq4kWxNNIS${NC}"
-echo -e "${YELLOW}設定方式：在 Cloudflare 儀表板 > Pages > 您的專案 > 設定 > 環境變數${NC}"
+echo -e "${GREEN}部署流程完成！${NC}"
+echo -e "${YELLOW}重要提示：請在 Cloudflare 儀表板設定環境變數${NC}"
+echo -e "${YELLOW}設定位置：Cloudflare > Pages > 您的專案 > 設定 > 環境變數${NC}"
+echo -e "${YELLOW}需設定以下變數：${NC}"
+echo -e "${YELLOW}  TWSE_API_BASE = https://openapi.twse.com.tw${NC}"
+echo -e "${YELLOW}  ECPAY_MERCHANT_ID = 2000132${NC}"
+echo -e "${YELLOW}  ECPAY_HASH_KEY = 5294y06JbISpM5x9${NC}"
+echo -e "${YELLOW}  ECPAY_HASH_IV = v77hoKGq4kWxNNIS${NC}"
