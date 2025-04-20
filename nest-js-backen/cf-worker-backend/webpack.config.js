@@ -12,6 +12,14 @@ module.exports = {
 		alias: {
 			'@': path.resolve(__dirname, 'src'),
 		},
+		fallback: {
+			stream: require.resolve('stream-browserify'),
+			buffer: require.resolve('buffer/'),
+			util: require.resolve('util/'),
+			path: require.resolve('path-browserify'),
+			fs: false,
+			crypto: require.resolve('crypto-browserify'),
+		},
 	},
 	module: {
 		rules: [

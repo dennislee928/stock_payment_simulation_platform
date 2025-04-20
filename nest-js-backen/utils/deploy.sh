@@ -175,7 +175,7 @@ if [ -z "$HAS_DB" ]; then
             echo "$DB_RESULT"
             exit 1
         fi
-    } else {
+    else
         # 從輸出中提取 database_id
         NEW_DB_ID=$(echo "$DB_RESULT" | grep -o 'database_id.*=.*"[^"]*"' | cut -d'"' -f2)
         if [ -n "$NEW_DB_ID" ]; then
@@ -190,7 +190,7 @@ if [ -z "$HAS_DB" ]; then
         else
             echo -e "${YELLOW}警告: 無法提取新創建的資料庫 ID，請手動更新 wrangler.toml${NC}"
         fi
-    }
+    fi
 else
     echo -e "${GREEN}資料庫 $DB_NAME 已存在${NC}"
     
