@@ -11,8 +11,7 @@ import {
   Result,
 } from "ant-design-vue";
 
-// 引入基礎樣式
-import "ant-design-vue/es/style/index.css";
+// 不再引入CSS，我們會在app.vue中使用其他方式引入樣式
 
 export default defineNuxtPlugin((nuxtApp) => {
   // 使用類型斷言解決TypeScript類型問題

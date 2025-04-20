@@ -2,7 +2,7 @@
   "name": "stock-payment-simulation-platform",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
+    "build": "NITRO_PRESET=vercel nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",

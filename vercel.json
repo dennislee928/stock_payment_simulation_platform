@@ -1,0 +1,18 @@
+{
+  "framework": "nuxt",
+  "buildCommand": "NITRO_PRESET=vercel nuxt build",
+  "ignoreCommand": "!(git diff --quiet HEAD^ HEAD -- . ':!package.json')",
+  "devCommand": "nuxt dev",
+  "regions": ["iad1"],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

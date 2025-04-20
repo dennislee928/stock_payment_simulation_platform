@@ -2,6 +2,7 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss"],
+  css: ["~/assets/css/main.css"],
   runtimeConfig: {
     public: {
       ecpayMerchantId: process.env.ECPAY_MERCHANT_ID,
@@ -13,9 +14,6 @@ export default defineNuxtConfig({
   vite: {
     define: {
       "process.env": {},
-    },
-    optimizeDeps: {
-      include: ["ant-design-vue/es/style/index.css"],
     },
     ssr: {
       noExternal: ["ant-design-vue"],
@@ -41,7 +39,13 @@ export default defineNuxtConfig({
             "以 Nuxt 3 + ECPay 金流測試環境 + TWSE Open API 為核心，打造投資人模擬下單平台",
         },
       ],
-      link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" }],
+      link: [
+        { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+        {
+          rel: "stylesheet",
+          href: "https://unpkg.com/ant-design-vue@3.2.20/dist/antd.min.css",
+        },
+      ],
     },
   },
 });

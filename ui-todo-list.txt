@@ -1,6 +1,6 @@
 # 股票付款模擬平台 UI 元件指南
 
-## 解決方案摘要
+## 解決方案摘要 (更新版)
 
 1. **CORS 問題解決**
    - 使用 Nuxt 後端 API 代理台灣證交所的 API
@@ -9,14 +9,15 @@
 
 2. **Ant Design Vue 整合**
    - 安裝 `ant-design-vue@next` 套件
-   - 創建 `plugins/antd.ts` 設定 Ant Design Vue 插件
-   - 改用按需引入組件，而非全局引入
-   - 使用 'ant-design-vue/es/style/index.css' 替代全局 CSS
+   - 創建 `plugins/antd.ts` 按需引入組件，而非全局引入
+   - 使用 CDN 方式引入 Ant Design 樣式，解決打包問題
+   - 創建自定義 CSS 文件處理樣式覆蓋和自定義
 
-3. **Vercel 部署問題解決**
-   - 改用按需引入 Ant Design Vue 組件，解決 CSS 解析問題
-   - 配置 Vite 的 optimizeDeps 和 ssr 選項
-   - 添加 Nitro 配置，使用 preset: 'vercel'
+3. **Vercel 部署問題解決 (2024 更新)**
+   - 使用 CDN 引入 Ant Design 樣式，完全避開 Rollup 解析問題
+   - 配置 Nitro preset 為 'vercel'
+   - 添加 vercel.json 文件自定義構建過程
+   - 修改 package.json 的構建指令
    - 修復 TypeScript 類型問題
 
 ## UI 元件庫結構
@@ -176,56 +177,92 @@ CORS（跨來源資源共享）問題是因為網頁應用（如 Vercel 部署�
 - 可以在 API 代理中加入錯誤處理和格式轉換
 - 更好的安全性和維護性
 
-## Vercel 部署問題解決詳解
+## Vercel 部署問題解決詳解 (更新版)
 
-在 Vercel 上部署 Nuxt 3 + Ant Design Vue 專案時會遇到 CSS 引入問題，主要是 Rollup 無法正確解析 `ant-design-vue/dist/antd.css`。解決方案：
+在 Vercel 上部署 Nuxt 3 + Ant Design Vue 專案時, 我們遇到了 CSS 引入的問題，無論是使用 `antd.css` 還是 `antd.min.css` 或 `style/index.css` 都會導致 Rollup 打包失敗。以下是改進的解決方案：
 
-1. **按需引入組件而非全局引入**
+1. **使用 CDN 引入樣式**
    
+   在 `nuxt.config.ts` 中：
    ```typescript
-   // plugins/antd.ts
-   // 原來的方式
-   import Antd from "ant-design-vue";
-   import "ant-design-vue/dist/antd.css";
-   
-   // 改為
-   import { Button, Input, Card, ... } from 'ant-design-vue';
-   import 'ant-design-vue/es/style/index.css';
-   ```
-
-2. **使用類型斷言解決 TypeScript 錯誤**
-
-   ```typescript
-   // 使用類型斷言
-   const app = nuxtApp.vueApp as any;
-   
-   // 然後註冊組件
-   app.component('a-button', Button);
-   app.component('a-input', Input);
-   // ...
-   ```
-
-3. **配置 Vite 和 Nitro**
-
-   ```typescript
-   // nuxt.config.ts
    export default defineNuxtConfig({
      // ...
-     vite: {
-       optimizeDeps: {
-         include: ['ant-design-vue/es/style/index.css']
+     app: {
+       head: {
+         // ...
+         link: [
+           { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+           { rel: "stylesheet", href: "https://unpkg.com/ant-design-vue@3.2.20/dist/antd.min.css" }
+         ],
        },
-       ssr: {
-         noExternal: ['ant-design-vue']
-       }
-     },
-     nitro: {
-       preset: 'vercel'
      }
    });
    ```
 
-這些修改可以確保在 Vercel 上成功部署，同時保持 Ant Design Vue 組件的完整功能。
+2. **移除插件中的 CSS 引入**
+   
+   在 `plugins/antd.ts` 中：
+   ```typescript
+   import { Button, Input, ... } from 'ant-design-vue';
+   
+   // 不再引入 CSS
+   // import 'ant-design-vue/es/style/index.css';
+   
+   export default defineNuxtPlugin((nuxtApp) => {
+     const app = nuxtApp.vueApp as any;
+     app.component('a-button', Button);
+     // ...
+   });
+   ```
+
+3. **添加自定義 CSS 文件**
+   
+   在 `assets/css/main.css` 中添加自定義樣式，並在 `nuxt.config.ts` 中引入：
+   ```typescript
+   export default defineNuxtConfig({
+     // ...
+     css: ['~/assets/css/main.css'],
+     // ...
+   });
+   ```
+
+4. **配置 Nitro 和 Vercel 構建過程**
+   
+   ```typescript
+   // nuxt.config.ts
+   export default defineNuxtConfig({
+     // ...
+     nitro: {
+       preset: 'vercel',
+       esbuild: {
+         options: {
+           target: 'es2019'
+         }
+       }
+     },
+     // ...
+   });
+   ```
+   
+   ```json
+   // vercel.json
+   {
+     "framework": "nuxt",
+     "buildCommand": "NITRO_PRESET=vercel nuxt build",
+     "devCommand": "nuxt dev",
+     "regions": ["iad1"]
+   }
+   ```
+   
+   ```json
+   // package.json 的 scripts 部分
+   "scripts": {
+     "build": "NITRO_PRESET=vercel nuxt build",
+     // ...
+   }
+   ```
+
+這種方法可以徹底避開 Rollup 打包 Ant Design CSS 時的問題，同時保持了組件的功能完整性。雖然使用 CDN 可能會略微影響初始載入速度，但相比於其他解決方案，這種方法更加穩定可靠。
 
 ## 注意事項
 
@@ -233,3 +270,4 @@ CORS（跨來源資源共享）問題是因為網頁應用（如 Vercel 部署�
 - 確保 Nuxt 版本為 3.x 以上
 - 在部署到生產環境前，請正確設定 .env 檔案中的 TWSE_API_BASE 變數
 - 在 Vercel 上部署時要檢查環境變數是否已正確設置
+- 如果 CDN 引入有問題，可以考慮將 Ant Design 的樣式檔下載到專案中使用
