@@ -16,7 +16,7 @@ export const useCartStore = defineStore("cart", {
 
   getters: {
     totalAmount: (state) => {
-      return state.items.reduce((total, item) => {
+      return state.items.reduce((total: number, item: CartItem) => {
         return total + item.price * item.quantity;
       }, 0);
     },
@@ -26,27 +26,27 @@ export const useCartStore = defineStore("cart", {
     },
 
     totalQuantity: (state) => {
-      return state.items.reduce((total, item) => {
+      return state.items.reduce((total: number, item: CartItem) => {
         return total + item.quantity;
       }, 0);
     },
 
     formattedTotal: (state) => {
-      const total = state.items.reduce((total, item) => {
-        return total + item.price * item.quantity;
-      }, 0);
-      return new Intl.NumberFormat("zh-TW", {
-        style: "currency",
-        currency: "TWD",
-        minimumFractionDigits: 0,
-      }).format(total);
+      return state.items
+        .reduce((total: number, item: CartItem) => {
+          return total + item.price * item.quantity;
+        }, 0)
+        .toLocaleString("zh-TW", {
+          style: "currency",
+          currency: "TWD",
+        });
     },
   },
 
   actions: {
     addItem(item: Omit<CartItem, "quantity">, quantity: number = 1) {
       const existingItemIndex = this.items.findIndex(
-        (i) => i.symbol === item.symbol
+        (i: CartItem) => i.symbol === item.symbol
       );
 
       if (existingItemIndex !== -1) {
@@ -62,13 +62,15 @@ export const useCartStore = defineStore("cart", {
     },
 
     removeItem(symbol: string) {
-      this.items = this.items.filter((item) => item.symbol !== symbol);
+      this.items = this.items.filter(
+        (item: CartItem) => item.symbol !== symbol
+      );
 
       this.saveToStorage();
     },
 
     updateQuantity(symbol: string, quantity: number) {
-      const item = this.items.find((item) => item.symbol === symbol);
+      const item = this.items.find((item: CartItem) => item.symbol === symbol);
       if (item) {
         item.quantity = quantity;
 
