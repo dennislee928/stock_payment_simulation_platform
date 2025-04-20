@@ -1,179 +1,142 @@
-Nuxt 3 的 檔案
-在 Nuxt 3 應用程式的根目錄中，你會找到一個名為 nuxt.config.ts 的檔案
-。這個檔案是 Nuxt 3 應用程式的核心配置中心，你可以在這裡配置整個專案的行為、新增模組、定義 CSS 檔案、設定路由規則等等。你可以將 nuxt.config.ts 視為你 Nuxt 3 專案的「控制面板」
-。
-基本結構
-nuxt.config.ts 檔案通常導出一個使用 defineNuxtConfig 函數定義的物件
-。defineNuxtConfig 是 Nuxt 3 提供的一個工具函數，它可以提供更好的類型提示和自動完成功能
-。
-程式碼範例：基本的 nuxt.config.ts 結構
+# ⚙️ Nuxt 3 設定檔 `nuxt.config.ts` 完整指南
 
-import { defineNuxtConfig } from 'nuxt/config';
-import { resolve } from 'path';
+Nuxt 3 使用 `nuxt.config.ts` 作為應用程式的設定核心。你可以透過它控制應用程式的行為、元件載入、自動匯入、模組、環境變數等。
 
+---
+
+## 📁 設定檔基礎架構
+
+```ts
 export default defineNuxtConfig({
-// 你的配置選項將在這裡定義
-alias: {
-'@': resolve(\_\_dirname, './')
-},
-css: [
-'@/assets/main.scss'
-],
-modules: [
-// ...
-]
-// ...
+  app: {
+    head: {
+      title: "My Nuxt App",
+      meta: [
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+      ],
+    },
+  },
+  css: ["~/assets/main.css"],
+  components: true,
+  modules: ["@nuxtjs/tailwindcss"],
+  runtimeConfig: {
+    public: {
+      apiBase: "/api",
+    },
+    privateToken: process.env.PRIVATE_TOKEN,
+  },
 });
+```
 
-Mermaid 圖表：nuxt.config.ts 的基本結構
+📊 Mermaid 圖：Nuxt 設定檔功能分類總覽
 
+```mermaid
 graph TD
-A[nuxt.config.ts] --> B(import { defineNuxtConfig } from 'nuxt/config');
-B --> C(export default defineNuxtConfig({ ... }));
-C --> D[配置物件];
-D --> E{alias};
-D --> F{css};
-D --> G{modules};
-D --> H{其他配置選項};
+A[nuxt.config.ts] --> B[app]
+A --> C[css]
+A --> D[components]
+A --> E[modules]
+A --> F[plugins]
+A --> G[runtimeConfig]
+G --> H[public]
+G --> I[private]
+```
 
-圖表說明：
+🔹 app.head：定義全站 <head> 資訊
 
-1.  nuxt.config.ts 是 Nuxt 3 的主要設定檔
-    。
-2.  我們從 nuxt/config 匯入 defineNuxtConfig 函數
-    。
-3.  使用 export default defineNuxtConfig({ ... }) 導出一個配置物件
-    。
-4.  在這個配置物件中，你可以定義各種 Nuxt 3 應用程式的設定
-    。
-5.  常見的配置選項包括 alias（路徑別名）、css（全域 CSS 檔案）、modules（使用的模組）以及其他更進階的設定。
-    主要配置選項
-    nuxt.config.ts 提供了非常多的配置選項，以下是一些最常用且重要的選項：
-    •
-    alias: 這個選項允許你定義路徑別名，方便在專案中引用檔案
-    。例如，你可以將 @ 別名指向專案的根目錄
-    。
-    •
-    程式碼範例：定義路徑別名
-    •
-    Mermaid 圖表：alias 配置
-    •
-    css: 這個選項是一個字串陣列，用於指定需要在整個應用程式中引入的 CSS 或 SCSS 檔案
-    。
-    •
-    程式碼範例：引入全域 CSS 檔案
-    •
-    Mermaid 圖表：css 配置
-    •
-    modules: 這是一個陣列，用於指定你的 Nuxt 3 應用程式需要使用的模組
-    。模組可以擴展 Nuxt 3 的功能，例如整合 Tailwind CSS、Nuxt Content 等
-    ।
-    •
-    程式碼範例：使用模組
-    •
-    Mermaid 圖表：modules 配置
-    •
-    app: 這個選項包含了一系列用於配置應用程式外觀和行為的子選項
-    。
-    ◦
-    baseURL: 設定應用程式的基礎 URL。
-    ◦
-    buildAssetsDir: 設定建構後的靜態資源目錄名稱 (預設為 \_nuxt)。
-    ◦
-    cdnURL: 設定生產環境下靜態資源的 CDN URL。
-    ◦
-    head: 定義應用程式的全局 <head> 標籤內容，用於設定 SEO 元數據等
-    ।
-    ◦
-    keepalive: 控制組件是否保持活躍狀態。
-    ◦
-    layoutTransition: 設定佈局切換的過場效果。
-    ◦
-    pageTransition: 設定頁面切換的過場效果。
-    ◦
-    rootId: 自訂應用程式根元素的 ID (預設為 \_\_nuxt)
-    ।
-    •
-    Mermaid 圖表：app 配置
-    •
-    build: 這個選項用於配置應用程式的建構過程
-    。你可以更改建構輸出的目錄 (.nuxt 預設為 .output)
-    。
-    •
-    Mermaid 圖表：build 配置
-    •
-    debug: 設定為 true 時，Nuxt 會輸出更詳細的除錯資訊
-    。
-    •
-    devServer: 這個選項允許你配置開發伺服器的行為，例如更改主機 (host)、埠號 (port) 等
-    ।
-    •
-    Mermaid 圖表：devServer 配置
-    •
-    dir: 這個選項用於自訂 Nuxt 3 專案中特定目錄的名稱
-    。例如，你可以更改 pages、components、layouts、middleware、plugins、assets、public 和 server 等目錄的名稱
-    ।
-    •
-    Mermaid 圖表：dir 配置
-    •
-    extensions: 這個選項是一個字串陣列，用於指定 Nuxt 3 應該解析的檔案擴展名
-    。
-    •
-    vite: 這個選項允許你直接配置 Vite 這個 Nuxt 3 預設使用的建構工具
-    ।
-    •
-    webpack: 如果你選擇使用 Webpack 而不是 Vite（雖然 Nuxt 3 預設使用 Vite），你可以使用這個選項來配置 Webpack
-    ।
-    •
-    postcss: 這個選項用於配置 PostCSS，這是一個轉換 CSS 的工具。例如，你可以使用它來配置 Tailwind CSS
-    ।
-    •
-    程式碼範例：配置 PostCSS 和 Tailwind CSS
-    •
-    Mermaid 圖表：postcss 配置
-    •
-    ssr: 在 Nuxt 2 中，這個選項用於啟用或停用伺服器端渲染 (SSR)
-    。在 Nuxt 3 中，渲染模式的配置更加細緻，通常會使用 routeRules 這個選項來針對不同的路由設定不同的渲染策略
-    。
-    •
-    routeRules: 這是 Nuxt 3 中一個強大的新功能，允許你為特定的路由定義細緻的規則
-    。你可以設定路由的渲染模式 (SSR, client-side rendering, static)、快取策略、標頭、重新導向等等。這使得你可以輕鬆實現混合渲染 (hybrid rendering)，即某些頁面在伺服器端渲染，而其他頁面在客戶端渲染
-    ।
-    •
-    Mermaid 圖表：routeRules 配置
-    模組的配置
-    許多 Nuxt 3 模組允許你在 nuxt.config.ts 中進行額外的配置
-    。通常，你會在 defineNuxtConfig 的物件中找到一個以模組名稱命名的屬性，你可以在這個屬性中設定模組的特定選項
-    。
-    程式碼範例：配置 @nuxtjs/tailwindcss 模組
+用來設置 HTML 標籤中 <title>、<meta>、<link> 等。
 
-import { defineNuxtConfig } from 'nuxt/config';
-import { resolve } from 'path';
-
-export default defineNuxtConfig({
-modules: [
-'@nuxtjs/tailwindcss'
-],
-tailwindcss: {
-configPath: './tailwind.config.js', // 指定 Tailwind CSS 配置檔案路徑
-exposeConfig: false, // 是否在全域暴露 Tailwind CSS 配置
-config: {} // 直接在此處覆寫 Tailwind CSS 配置
+```ts
+app: {
+  head: {
+    title: "My Cool App",
+    link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" }],
+  },
 },
-// ...
-});
+```
 
-Mermaid 圖表：模組配置
+}
 
-graph TD
-A[nuxt.config.ts] --> B(defineNuxtConfig);
-B --> C{modules: ['@nuxtjs/tailwindcss']};
-B --> D{tailwindcss: { ... }};
-D --> E{configPath: './tailwind.config.js'};
-D --> F{exposeConfig: false};
-D --> G{config: {}};
-C --> H[啟用 Tailwind CSS 模組];
-D --> I[Tailwind CSS 專用配置];
+🎨 css：全域樣式導入
 
-總結
-nuxt.config.ts 是 Nuxt 3 應用程式中不可或缺的一部分。它提供了一個集中管理專案配置的強大方式，讓你能夠輕鬆地調整應用程式的各種行為和特性，包括模組整合、樣式設定、路由規則、建構選項等等
-。深入理解並善用 nuxt.config.ts，將會大大提升你的 Nuxt 3 開發效率和專案的靈活性。
+Nuxt 支援自動匯入 CSS、SCSS、Tailwind 等全域樣式檔。
+
+```ts
+css: ["~/assets/styles.scss"];
+```
+
+🧩 components：元件自動註冊
+
+Nuxt 可自動掃描 components/ 下的 .vue 檔案並全域註冊。
+
+```ts
+components: {
+  dirs: ["~/components", { path: "~/components/global", global: true }];
+}
+```
+
+## 🔌 plugins：插件設定
+
+在 plugins/ 目錄下建立 plugin 並使用 defineNuxtPlugin 匯出。可選擇 client/server only。
+
+```ts
+plugins: ["~/plugins/axios.ts"];
+```
+
+## ⚙️ modules：Nuxt 模組載入點
+
+常見模組如 @nuxtjs/tailwindcss, @vueuse/nuxt, @pinia/nuxt 等。
+
+```ts
+modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt"];
+```
+
+## 🔐 runtimeConfig：環境變數（public/private）
+
+Nuxt 3 引入 runtimeConfig 來區分公開與私密變數，支援 .env 檔匯入。
+
+```ts
+runtimeConfig: {
+  public: {
+    apiBase: "/api",
+  },
+  privateToken: process.env.SECRET_TOKEN,
+};
+```
+
+可在 composable 中使用：
+
+```ts
+const config = useRuntimeConfig();
+console.log(config.public.apiBase);
+```
+
+## 🧠 建議最佳實務
+
+項目 說明
+app.head 建議集中設置 SEO 與 viewport 等標籤
+css 統一使用 SCSS + Tailwind 輔助開發
+runtimeConfig 公私變數明確區分，避免外洩敏感資訊
+modules 模組配置建議統一於此維護，利於除錯
+
+## 🔁 Mermaid：設定套用流程
+
+```mermaid
+flowchart TD
+A[啟動 Nuxt] --> B[載入 nuxt.config.ts]
+B --> C[解析 modules]
+B --> D[設定 app.head/css 等]
+B --> E[注入 runtimeConfig]
+C --> F[載入模組功能]
+E --> G[供 useRuntimeConfig 使用]
+```
+
+##
+
+✅ 總結
+
+    nuxt.config.ts 是 Nuxt 專案的中樞
+
+    支援 TypeScript 提示與模組型設計
+
+    配合 runtimeConfig, app, modules, plugins 可完整控制專案行為
