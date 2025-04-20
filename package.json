@@ -6,6 +6,7 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "preinstall": "mkdir -p node_modules/@rollup/ && touch node_modules/@rollup/rollup-linux-x64-gnu",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
@@ -23,5 +24,8 @@
     "@nuxtjs/tailwindcss": "^6.10.3",
     "sass": "^1.70.0",
     "typescript": "^5.3.3"
+  },
+  "overrides": {
+    "rollup": "npm:@rollup/wasm-node"
   }
 }
