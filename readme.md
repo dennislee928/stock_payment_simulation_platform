@@ -63,4 +63,4 @@ graph TD
 
 ✅ 若你正在整理教學、轉換為 PDF、生成技術簡報或 AI 學習資料，建議使用以上順序進行學習與展示。
 
-歡迎擴充章節！你可以加入如 i18n、Image 模組、Nitro 手動路由、Vite Plugin 擴充等進階主題。
+# 歡迎擴充章節！你可以加入如 i18n、Image 模組、Nitro 手動路由、Vite Plugin 擴充等進階主題。
