@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Deploy target environment"
+        description: "部署環境"
         required: false
         default: "preview"
 
@@ -18,95 +18,87 @@ jobs:
     env:
       NODE_ENV: production
       NITRO_PRESET: cloudflare-pages
-      NODE_OPTIONS: "--max_old_space_size=4096"
+      NODE_OPTIONS: --max_old_space_size=4096
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "20.x"
-          cache: npm
+          cache: "npm"
 
-      - name: Clean up existing files
-        run: rm -rf node_modules package-lock.json .nuxt .output dist || true
-
-      - name: Create Tailwind config if missing
+      - name: Setup Configuration
         run: |
-          if [ ! -f "tailwind.config.js" ]; then
-            echo "Creating tailwind.config.js..."
-            echo "/** @type {import('tailwindcss').Config} */" > tailwind.config.js
-            echo "module.exports = {" >> tailwind.config.js
-            echo "  content: [" >> tailwind.config.js
-            echo "    \"./components/**/*.{js,vue,ts}\"," >> tailwind.config.js
-            echo "    \"./layouts/**/*.vue\"," >> tailwind.config.js
-            echo "    \"./pages/**/*.vue\"," >> tailwind.config.js
-            echo "    \"./plugins/**/*.{js,ts}\"," >> tailwind.config.js
-            echo "    \"./app.vue\"," >> tailwind.config.js
-            echo "    \"./nuxt.config.{js,ts}\"," >> tailwind.config.js
-            echo "  ]," >> tailwind.config.js
-            echo "  theme: {" >> tailwind.config.js
-            echo "    extend: {}," >> tailwind.config.js
-            echo "  }," >> tailwind.config.js
-            echo "  plugins: []," >> tailwind.config.js
-            echo "}" >> tailwind.config.js
-          fi
+          rm -rf node_modules package-lock.json .nuxt .output dist || true
 
-      - name: Patch package.json dependencies
-        run: |
-          echo "// Patch script" > package-fix.js
+          echo "創建 tailwind.config.js..."
+          cat <<EOF > tailwind.config.js
+          /** @type {import('tailwindcss').Config} */
+          module.exports = {
+            content: [
+              "./components/**/*.{js,vue,ts}",
+              "./layouts/**/*.vue",
+              "./pages/**/*.vue",
+              "./plugins/**/*.{js,ts}",
+              "./app.vue",
+              "./nuxt.config.{js,ts}",
+            ],
+            theme: {
+              extend: {},
+            },
+            plugins: [],
+          }
+          EOF
+
+          echo "// Package fix script" > package-fix.js
           echo "const fs = require('fs');" >> package-fix.js
-          echo "const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));" >> package-fix.js
-          echo "pkg.devDependencies = pkg.devDependencies || {};" >> package-fix.js
-          echo "pkg.devDependencies['tailwindcss'] = '^3.4.0';" >> package-fix.js
-          echo "pkg.devDependencies['@nuxtjs/tailwindcss'] = '^6.10.3';" >> package-fix.js
-          echo "pkg.devDependencies['postcss'] = '^8.4.33';" >> package-fix.js
-          echo "pkg.devDependencies['autoprefixer'] = '^10.4.17';" >> package-fix.js
-          echo "pkg.devDependencies['vitest'] = '^1.1.0';" >> package-fix.js
-          echo "pkg.devDependencies['@vitejs/plugin-vue'] = '^5.0.0';" >> package-fix.js
-          echo "pkg.devDependencies['@vitest/ui'] = '^1.1.0';" >> package-fix.js
-          echo "pkg.scripts = pkg.scripts || {};" >> package-fix.js
-          echo "pkg.scripts.build = 'nuxt build';" >> package-fix.js
-          echo "pkg.scripts.test = 'vitest';" >> package-fix.js
-          echo "pkg.scripts['test:ui'] = 'vitest --ui';" >> package-fix.js
-          echo "fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2));" >> package-fix.js
+          echo "const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));" >> package-fix.js
+          echo "packageJson.devDependencies = packageJson.devDependencies || {};" >> package-fix.js
+          echo "packageJson.devDependencies['@nuxtjs/tailwindcss'] = '^6.10.3';" >> package-fix.js
+          echo "packageJson.devDependencies['tailwindcss'] = '^3.4.0';" >> package-fix.js
+          echo "packageJson.devDependencies['postcss'] = '^8.4.33';" >> package-fix.js
+          echo "packageJson.devDependencies['autoprefixer'] = '^10.4.17';" >> package-fix.js
+          echo "packageJson.devDependencies['@rollup/wasm-node'] = '^4.13.0';" >> package-fix.js
+          echo "packageJson.devDependencies['vitest'] = '^1.1.0';" >> package-fix.js
+          echo "packageJson.devDependencies['@vitejs/plugin-vue'] = '^5.0.0';" >> package-fix.js
+          echo "packageJson.devDependencies['@vitest/ui'] = '^1.1.0';" >> package-fix.js
+          echo "packageJson.devDependencies['sass-embedded'] = '^1.69.5';" >> package-fix.js
+          echo "packageJson.resolutions = packageJson.resolutions || {};" >> package-fix.js
+          echo "packageJson.resolutions['rollup'] = 'npm:@rollup/wasm-node';" >> package-fix.js
+          echo "packageJson.overrides = packageJson.overrides || {};" >> package-fix.js
+          echo "packageJson.overrides['rollup'] = 'npm:@rollup/wasm-node';" >> package-fix.js
+          echo "packageJson.scripts.build = 'nuxt build';" >> package-fix.js
+          echo "packageJson.scripts.postinstall = 'nuxt prepare';" >> package-fix.js
+          echo "packageJson.scripts.test = 'vitest';" >> package-fix.js
+          echo "packageJson.scripts['test:ui'] = 'vitest --ui';" >> package-fix.js
+          echo "delete packageJson.scripts.preinstall;" >> package-fix.js
+          echo "fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));" >> package-fix.js
           node package-fix.js
           rm package-fix.js
 
-      - name: Create PostCSS config
-        run: |
           if [ ! -f "postcss.config.js" ]; then
-            echo "module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }" > postcss.config.js
+            echo "module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } };" > postcss.config.js
           fi
 
-      - name: Create Vitest config
-        run: |
           if [ ! -f "vitest.config.ts" ]; then
             echo "import { defineConfig } from 'vitest/config'" > vitest.config.ts
             echo "import vue from '@vitejs/plugin-vue'" >> vitest.config.ts
-            echo "" >> vitest.config.ts
             echo "export default defineConfig({" >> vitest.config.ts
             echo "  plugins: [vue()]," >> vitest.config.ts
-            echo "  test: {" >> vitest.config.ts
-            echo "    environment: 'jsdom'," >> vitest.config.ts
-            echo "    include: ['**/*.{test,spec}.{js,ts,jsx,tsx}']," >> vitest.config.ts
-            echo "    exclude: ['node_modules', 'dist', '.nuxt', '.output']" >> vitest.config.ts
-            echo "  }" >> vitest.config.ts
+            echo "  test: { environment: 'jsdom', include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'], exclude: ['node_modules', 'dist', '.nuxt', '.output'] }" >> vitest.config.ts
             echo "})" >> vitest.config.ts
           fi
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm install
 
-      - name: Nuxt prepare step
-        run: npx nuxt prepare
-
-      - name: Build Nuxt project
+      - name: Build Nuxt Application
         run: npm run build
 
-      - name: Upload to Cloudflare Pages
+      - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -115,4 +107,3 @@ jobs:
           directory: .output/public
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: main
-          wranglerVersion: 3
