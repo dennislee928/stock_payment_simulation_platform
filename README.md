@@ -75,14 +75,45 @@ yarn dev
 
 ```
 .
-├── server/api/               # API 路由與付款 callback
-├── composables/              # 封裝 useStockSearch、useECPay
-├── pages/                    # stock, cart, order, admin 頁面
-├── middleware/               # login 保護頁面邏輯
-├── store/                    # Pinia 狀態模組
-├── assets/                   # 圖示與 CSS
-├── public/                   # 靜態圖與 fallback
-└── nuxt.config.ts            # Nuxt 設定
+├── app.vue
+├── nuxt.config.ts
+├── .env                 # 金鑰等敏感資訊（.gitignore 中排除）
+├── package.json
+├── tsconfig.json
+├── server/
+│   ├── api/
+│   │   ├── order/submit.post.ts        # 虛擬下單，呼叫綠界 API
+│   │   ├── payment/callback.post.ts    # 綠界金流 callback 處理
+│   │   └── stocks/[symbol].get.ts      # 快取 TWSE 個股報價
+│   └── middleware/
+│       └── auth.global.ts              # 模擬登入驗證
+├── composables/
+│   ├── useStocks.ts                    # 包裝 fetch + TWSE 處理
+│   ├── useCart.ts                      # 操作購物車用 Composable
+│   └── useAuth.ts                      # 模擬登入行為
+├── plugins/
+│   └── ecpay.client.ts                 # 客製化封裝前端綠界 SDK
+├── pages/
+│   ├── index.vue                       # 首頁（搜尋股票）
+│   ├── cart.vue                        # 模擬購物車頁
+│   ├── checkout.vue                    # 結帳介面
+│   ├── result.vue                      # 成交紀錄與狀態顯示
+│   └── admin/
+│       └── orders.vue                  # 模擬後台：已付款訂單顯示
+├── layouts/
+│   └── default.vue                     # 主視覺框架與導航列
+├── stores/
+│   ├── auth.ts                         # Pinia 登入狀態與 token 儲存
+│   ├── cart.ts                         # Pinia 虛擬購物車模組
+│   └── stocks.ts                       # Pinia 股票快取與展示資訊
+├── assets/
+│   ├── styles/
+│   │   └── main.scss
+│   └── icons/
+│       └── ecpay.svg
+└── public/
+    └── ecpay-redirect.html             # 綠界 redirect return 頁面（必要）
+
 ```
 
 ---
