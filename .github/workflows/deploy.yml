@@ -27,151 +27,174 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18.20.8"
+          node-version: "20.x"
           cache: "npm"
 
-      # 解決 Rollup 依賴問題
-      - name: Setup Rollup WebAssembly
+      # 清理和修改配置
+      - name: Setup Configuration
         run: |
           # 刪除舊的文件
-          rm -rf node_modules package-lock.json || true
+          rm -rf node_modules package-lock.json .nuxt .output dist || true
 
-          # 修改 package.json 改為只使用 wasm 版本的 rollup
-          cat <<EOF > temp-fix.js
+          # 創建 tailwind.config.js 文件（如果不存在）
+          if [ ! -f "tailwind.config.js" ]; then
+            echo "創建 tailwind.config.js..."
+            cat <<EOF > tailwind.config.js
+            /** @type {import('tailwindcss').Config} */
+            module.exports = {
+              content: [
+                "./components/**/*.{js,vue,ts}",
+                "./layouts/**/*.vue",
+                "./pages/**/*.vue",
+                "./plugins/**/*.{js,ts}",
+                "./app.vue",
+                "./nuxt.config.{js,ts}",
+              ],
+              theme: {
+                extend: {},
+              },
+              plugins: [],
+            }
+            EOF
+          fi
+
+          # 修改 package.json
+          cat <<EOF > package-fix.js
           const fs = require('fs');
           const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 
-          // 添加 @rollup/wasm-node 到 devDependencies
+          # 更新依賴版本
           packageJson.devDependencies = packageJson.devDependencies || {};
-          packageJson.devDependencies['@rollup/wasm-node'] = '^4.13.0';
           packageJson.devDependencies['@nuxtjs/tailwindcss'] = '^6.10.3';
           packageJson.devDependencies['tailwindcss'] = '^3.4.0';
           packageJson.devDependencies['postcss'] = '^8.4.33';
           packageJson.devDependencies['autoprefixer'] = '^10.4.17';
+          packageJson.devDependencies['@rollup/wasm-node'] = '^4.13.0';
 
-          // 確保有 resolutions 區塊
+          # 確保有 overrides 和 resolutions
           packageJson.resolutions = packageJson.resolutions || {};
           packageJson.resolutions['rollup'] = 'npm:@rollup/wasm-node';
 
-          // 修改 build 腳本，跳過 vercel-build-prepare.js
-          packageJson.scripts.build = 'nuxt build';
-          packageJson.scripts.postinstall = 'nuxt prepare';
+          packageJson.overrides = packageJson.overrides || {};
+          packageJson.overrides['rollup'] = 'npm:@rollup/wasm-node';
 
-          // 刪除不必要的 scripts
+          # 修改 build 腳本，跳過 vercel-build-prepare.js
+          packageJson.scripts.build = 'nuxt build';
+          packageJson.scripts.postinstall = 'npx tailwindcss init -p && nuxt prepare';
+
+          # 刪除不必要的 scripts
           delete packageJson.scripts.preinstall;
 
           fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
           EOF
 
-          node temp-fix.js
-          rm temp-fix.js
+          node package-fix.js
+          rm package-fix.js
 
+          # 創建 postcss.config.js (如果需要)
+          if [ ! -f "postcss.config.js" ]; then
+            echo "創建 postcss.config.js..."
+            cat <<EOF > postcss.config.js
+            module.exports = {
+              plugins: {
+                tailwindcss: {},
+                autoprefixer: {},
+              },
+            }
+            EOF
+          fi
+
+      # 安裝依賴
       - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+        run: |
+          echo "正在安裝依賴..."
+          npm install
+
+          # 確保 TailwindCSS 已經安裝
+          if [ ! -d "node_modules/tailwindcss" ]; then
+            echo "手動安裝 TailwindCSS..."
+            npm install -D tailwindcss postcss autoprefixer @nuxtjs/tailwindcss
+            npx tailwindcss init -p
+          fi
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
 
-      # 檢查是否安裝了 tailwindcss
-      - name: Check Tailwind Installation
+      # 創建 CSS 檔案以確保 Tailwind 可以正常工作
+      - name: Setup Tailwind CSS
         run: |
-          echo "確認 tailwindcss 是否正確安裝..."
-          ls -la node_modules/@nuxtjs/tailwindcss || echo "tailwindcss not found!"
+          # 確保 assets/css 目錄存在
+          mkdir -p assets/css
 
-          # 如果不存在，嘗試單獨安裝
-          if [ ! -d "node_modules/@nuxtjs/tailwindcss" ]; then
-            echo "手動安裝 tailwindcss..."
-            npm install -D @nuxtjs/tailwindcss tailwindcss postcss autoprefixer
+          # 在主 CSS 文件中添加 tailwind 指令
+          if [ ! -f "assets/css/main.css" ]; then
+            echo "創建 main.css 並加入 Tailwind 指令..."
+            cat <<EOF > assets/css/main.css
+            @tailwind base;
+            @tailwind components;
+            @tailwind utilities;
+            EOF
+          else
+            # 檢查現有 CSS 文件中是否已有 tailwind 指令
+            if ! grep -q "@tailwind" assets/css/main.css; then
+              echo "向 main.css 添加 Tailwind 指令..."
+              sed -i '1i@tailwind base;\n@tailwind components;\n@tailwind utilities;\n' assets/css/main.css
+            fi
           fi
 
-      - name: Generate Fallback Output
-        run: |
-          mkdir -p .output/public
-          echo "<!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset=\"utf-8\">
-            <title>股票付款模擬平台</title>
-            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-            <style>
-              body { font-family: system-ui, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f5f5f5; }
-              .container { max-width: 800px; text-align: center; padding: 2rem; background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-              h1 { color: #1677ff; }
-            </style>
-          </head>
-          <body>
-            <div class=\"container\">
-              <h1>股票付款模擬平台</h1>
-              <p>正在載入中，請稍候...</p>
-              <p>如果您看到此頁面，表示網站正在部署中。請稍後再訪問。</p>
-            </div>
-          </body>
-          </html>" > .output/public/index.html
-
-          echo "已建立備用首頁"
-          ls -la .output/public
-
-      # 嘗試修改配置，暫時不使用 tailwindcss
-      - name: Update Nuxt Config
-        run: |
-          cat <<EOF > nuxt.fix.js
-          const fs = require('fs');
-          const config = fs.readFileSync('./nuxt.config.ts', 'utf8');
-
-          // 暫時移除 tailwindcss 模組
-          const updatedConfig = config.replace(
-            'modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss"],',
-            'modules: ["@pinia/nuxt"],'
-          );
-
-          fs.writeFileSync('./nuxt.config.ts', updatedConfig);
-          EOF
-
-          node nuxt.fix.js
-
-          echo "修改後的 nuxt.config.ts:"
-          cat nuxt.config.ts
-
-      # 嘗試構建
-      - name: Try Build
+      # 構建 Nuxt 應用
+      - name: Build Nuxt Application
         run: npm run build
-        continue-on-error: true
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
           NUXT_APP_BASE_URL: "/"
           CF_PAGES: true
           NITRO_PRESET: cloudflare-pages
 
-      - name: Debug Output Directory
+      # 確保輸出目錄存在
+      - name: Ensure Output Directory
         run: |
-          ls -la
-          echo "== .output directory =="
-          ls -la .output || echo "No .output directory"
-          echo "== .output/public directory =="
-          ls -la .output/public || echo "No .output/public directory"
+          if [ ! -d ".output/public" ]; then
+            echo "構建失敗，創建備用輸出目錄..."
+            mkdir -p .output/public
+            cp -r public/* .output/public/ 2>/dev/null || true
+            
+            echo "創建備用首頁..."
+            cat <<EOF > .output/public/index.html
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <title>股票付款模擬平台</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { font-family: system-ui, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f5f5f5; }
+                .container { max-width: 800px; text-align: center; padding: 2rem; background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                h1 { color: #1677ff; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <h1>股票付款模擬平台</h1>
+                <p>正在載入中，請稍候...</p>
+                <p>如果您看到此頁面，表示網站正在構建中。請稍後再訪問。</p>
+              </div>
+            </body>
+            </html>
+            EOF
+          fi
 
-      # 手動處理 Cloudflare 部署（如果 pages-action 有問題）
-      - name: Manual Cloudflare Pages Deployment
-        run: |
-          echo "安裝相容版本的 wrangler..."
-          npm i -g wrangler@3
+          echo "輸出目錄內容:"
+          ls -la .output/public
 
-          echo "使用 wrangler 直接部署..."
-          wrangler pages deploy .output/public \
-            --project-name="${{ secrets.CLOUDFLARE_PROJECT_NAME }}" \
-            --branch="main" \
-            --commit-dirty=true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        continue-on-error: true
-
-      # 如果手動部署失敗，嘗試使用 pages-action
-      - name: Upload to Cloudflare Pages (Fallback)
-        if: ${{ failure() }}
+      # 部署到 Cloudflare Pages
+      - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
           directory: .output/public
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+          # 直接使用相容版本的 wrangler
           wranglerVersion: 3
