@@ -3,8 +3,8 @@ name: Deploy to Cloudflare Pages
 on:
   push:
     branches:
-      - main # 自動部署來源分支
-  workflow_dispatch: # ✅ 新增手動部署選項
+      - main
+  workflow_dispatch:
     inputs:
       environment:
         description: "部署環境"
@@ -14,8 +14,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    # 定義環境變數
     env:
       NODE_ENV: production
       NITRO_PRESET: cloudflare-pages
@@ -30,168 +28,137 @@ jobs:
           node-version: "20.x"
           cache: "npm"
 
-      # 清理和修改配置
       - name: Setup Configuration
         run: |
-          # 刪除舊的文件
           rm -rf node_modules package-lock.json .nuxt .output dist || true
 
-          # 創建 tailwind.config.js 文件（如果不存在）
           if [ ! -f "tailwind.config.js" ]; then
             echo "創建 tailwind.config.js..."
             cat > tailwind.config.js << TAILWIND_EOF
-          /** @type {import('tailwindcss').Config} */
-          module.exports = {
-            content: [
-             "./components/**/*.{js,vue,ts}",
-             "./layouts/**/*.vue",
-             "./pages/**/*.vue",
-             "./plugins/**/*.{js,ts}",
-             "./app.vue",
-             "./nuxt.config.{js,ts}",
-            ],
-            theme: {
-             extend: {},
-             },
-            plugins: [],
-          }
-          TAILWIND_EOF
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./components/**/*.{js,vue,ts}",
+    "./layouts/**/*.vue",
+    "./pages/**/*.vue",
+    "./plugins/**/*.{js,ts}",
+    "./app.vue",
+    "./nuxt.config.{js,ts}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+TAILWIND_EOF
           fi
 
-          # 修改 package.json
           cat > package-fix.js << 'JS_EOF'
-          const fs = require('fs');
-          const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+const fs = require('fs');
+const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 
-          # 更新依賴版本
-          packageJson.devDependencies = packageJson.devDependencies || {};
-          packageJson.devDependencies['@nuxtjs/tailwindcss'] = '^6.10.3';
-          packageJson.devDependencies['tailwindcss'] = '^3.4.0';
-          packageJson.devDependencies['postcss'] = '^8.4.33';
-          packageJson.devDependencies['autoprefixer'] = '^10.4.17';
-          packageJson.devDependencies['@rollup/wasm-node'] = '^4.13.0';
-          packageJson.devDependencies['vitest'] = '^1.1.0';
-          packageJson.devDependencies['@vitejs/plugin-vue'] = '^5.0.0';
-          packageJson.devDependencies['@vitest/ui'] = '^1.1.0';
+// 更新依賴版本
+packageJson.devDependencies = packageJson.devDependencies || {};
+packageJson.devDependencies['@nuxtjs/tailwindcss'] = '^6.10.3';
+packageJson.devDependencies['tailwindcss'] = '^3.4.0';
+packageJson.devDependencies['postcss'] = '^8.4.33';
+packageJson.devDependencies['autoprefixer'] = '^10.4.17';
+packageJson.devDependencies['@rollup/wasm-node'] = '^4.13.0';
+packageJson.devDependencies['vitest'] = '^1.1.0';
+packageJson.devDependencies['@vitejs/plugin-vue'] = '^5.0.0';
+packageJson.devDependencies['@vitest/ui'] = '^1.1.0';
 
-          # 確保有 overrides 和 resolutions
-          packageJson.resolutions = packageJson.resolutions || {};
-          packageJson.resolutions['rollup'] = 'npm:@rollup/wasm-node';
+// 確保有 overrides 和 resolutions
+packageJson.resolutions = packageJson.resolutions || {};
+packageJson.resolutions['rollup'] = 'npm:@rollup/wasm-node';
 
-          packageJson.overrides = packageJson.overrides || {};
-          packageJson.overrides['rollup'] = 'npm:@rollup/wasm-node';
+packageJson.overrides = packageJson.overrides || {};
+packageJson.overrides['rollup'] = 'npm:@rollup/wasm-node';
 
-          # 修改 build 腳本，添加 vitest 相關配置
-          packageJson.scripts.build = 'nuxt build';
-          packageJson.scripts.postinstall = 'npx tailwindcss init -p && nuxt prepare';
-          packageJson.scripts.test = 'vitest';
-          packageJson.scripts['test:ui'] = 'vitest --ui';
+// 修改腳本
+packageJson.scripts.build = 'nuxt build';
+packageJson.scripts.postinstall = 'npx tailwindcss init -p && nuxt prepare';
+packageJson.scripts.test = 'vitest';
+packageJson.scripts['test:ui'] = 'vitest --ui';
+delete packageJson.scripts.preinstall;
 
-          # 刪除不必要的 scripts
-          delete packageJson.scripts.preinstall;
-
-          fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
-          JS_EOF
+fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
+JS_EOF
 
           node package-fix.js
           rm package-fix.js
 
-          # 創建 postcss.config.js (如果需要)
           if [ ! -f "postcss.config.js" ]; then
-            echo "創建 postcss.config.js..."
             cat > postcss.config.js << 'POSTCSS_EOF'
-            module.exports = {
-              plugins: {
-                tailwindcss: {},
-                autoprefixer: {},
-              },
-            }
-            POSTCSS_EOF
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+POSTCSS_EOF
           fi
 
-          # 創建 vitest.config.ts (支援 Vitest 測試和打包)
           if [ ! -f "vitest.config.ts" ]; then
-            echo "創建 vitest.config.ts..."
             cat > vitest.config.ts << 'VITEST_EOF'
-            import { defineConfig } from 'vitest/config'
-            import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
 
-            export default defineConfig({
-              plugins: [vue()],
-              test: {
-                environment: 'jsdom',
-                include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
-                exclude: ['node_modules', 'dist', '.nuxt', '.output'],
-              },
-              build: {
-                target: 'esnext',
-                outDir: 'dist',
-                emptyOutDir: true,
-                rollupOptions: {
-                  input: {
-                    main: './main.ts',
-                  },
-                  output: {
-                    format: 'esm',
-                    entryFileNames: '[name].[hash].js',
-                    chunkFileNames: '[name].[hash].js',
-                    assetFileNames: '[name].[hash].[ext]',
-                  },
-                },
-              },
-            })
-            VITEST_EOF
+export default defineConfig({
+  plugins: [vue()],
+  test: {
+    environment: 'jsdom',
+    include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    exclude: ['node_modules', 'dist', '.nuxt', '.output'],
+  },
+  build: {
+    target: 'esnext',
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: './main.ts',
+      },
+      output: {
+        format: 'esm',
+        entryFileNames: '[name].[hash].js',
+        chunkFileNames: '[name].[hash].js',
+        assetFileNames: '[name].[hash].[ext]',
+      },
+    },
+  },
+})
+VITEST_EOF
           fi
 
-      # 安裝依賴
       - name: Install Dependencies
         run: |
-          echo "正在安裝依賴..."
           npm install
-
-          # 確保 TailwindCSS 和 Vitest 已經安裝
           if [ ! -d "node_modules/tailwindcss" ] || [ ! -d "node_modules/vitest" ]; then
-            echo "手動安裝 TailwindCSS 和 Vitest..."
             npm install -D tailwindcss postcss autoprefixer @nuxtjs/tailwindcss vitest @vitejs/plugin-vue @vitest/ui
             npx tailwindcss init -p
           fi
-        env:
-          NODE_OPTIONS: "--max_old_space_size=4096"
 
-      # 創建 CSS 檔案以確保 Tailwind 可以正常工作
       - name: Setup Tailwind CSS
         run: |
-          # 確保 assets/css 目錄存在
           mkdir -p assets/css
-
-          # 在主 CSS 文件中添加 tailwind 指令
           if [ ! -f "assets/css/main.css" ]; then
-            echo "創建 main.css 並加入 Tailwind 指令..."
             cat > assets/css/main.css << 'CSS_EOF'
-            @tailwind base;
-            @tailwind components;
-            @tailwind utilities;
-            CSS_EOF
-          else
-            # 檢查現有 CSS 文件中是否已有 tailwind 指令
-            if ! grep -q "@tailwind" assets/css/main.css; then
-              echo "向 main.css 添加 Tailwind 指令..."
-              sed -i '1i@tailwind base;\n@tailwind components;\n@tailwind utilities;\n' assets/css/main.css
-            fi
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+CSS_EOF
           fi
 
-      # 嘗試運行測試 (如果有)
       - name: Run Tests
         run: |
           if [ -d "tests" ] || [ -d "test" ]; then
-            echo "運行測試..."
-            npm test || echo "測試失敗，但繼續構建流程"
+            npm test || echo "測試失敗但繼續部署"
           else
-            echo "沒有找到測試目錄，跳過測試步驟"
+            echo "跳過測試"
           fi
         continue-on-error: true
 
-      # 構建 Nuxt 應用
       - name: Build Nuxt Application
         run: npm run build
         env:
@@ -200,43 +167,25 @@ jobs:
           CF_PAGES: true
           NITRO_PRESET: cloudflare-pages
 
-      # 確保輸出目錄存在
       - name: Ensure Output Directory
         run: |
           if [ ! -d ".output/public" ]; then
-            echo "構建失敗，創建備用輸出目錄..."
             mkdir -p .output/public
             cp -r public/* .output/public/ 2>/dev/null || true
-            
-            echo "創建備用首頁..."
             cat > .output/public/index.html << 'HTML_EOF'
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="utf-8">
-              <title>股票付款模擬平台</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              <style>
-                body { font-family: system-ui, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f5f5f5; }
-                .container { max-width: 800px; text-align: center; padding: 2rem; background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-                h1 { color: #1677ff; }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <h1>股票付款模擬平台</h1>
-                <p>正在載入中，請稍候...</p>
-                <p>如果您看到此頁面，表示網站正在構建中。請稍後再訪問。</p>
-              </div>
-            </body>
-            </html>
-            HTML_EOF
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>股票付款模擬平台</title>
+</head>
+<body>
+  <h1>網站正在構建中...</h1>
+</body>
+</html>
+HTML_EOF
           fi
 
-          echo "輸出目錄內容:"
-          ls -la .output/public
-
-      # 部署到 Cloudflare Pages
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
@@ -246,5 +195,4 @@ jobs:
           directory: .output/public
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: main
-          # 直接使用相容版本的 wrangler
           wranglerVersion: 3
