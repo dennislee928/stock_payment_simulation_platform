@@ -72,11 +72,11 @@ fi
 # 備份 package.json
 cp package.json package.json.bak
 
-# 修正 @cloudflare/d1 版本
+# 修正 @cloudflare/d1 版本 - 使用確定存在的版本 1.4.1
 if grep -q '@cloudflare/d1' package.json; then
-    echo -e "${YELLOW}修正 @cloudflare/d1 版本...${NC}"
-    # 將版本更新為最新可用版本 (1.6.0)
-    sed -i.tmp 's/"@cloudflare\/d1": "\^[0-9]*\.[0-9]*\.[0-9]*"/"@cloudflare\/d1": "\^1.6.0"/' package.json
+    echo -e "${YELLOW}修正 @cloudflare/d1 版本為 1.4.1...${NC}"
+    # 將版本更新為確定可用的版本 1.4.1
+    sed -i.tmp 's/"@cloudflare\/d1": "\^[0-9]*\.[0-9]*\.[0-9]*"/"@cloudflare\/d1": "1.4.1"/' package.json
     rm package.json.tmp 2>/dev/null || true
 fi
 
@@ -84,7 +84,7 @@ fi
 if grep -q 'wrangler' package.json; then
     echo -e "${YELLOW}修正 wrangler 版本...${NC}"
     # 更新 wrangler 版本到指定版本
-    sed -i.tmp 's/"wrangler": "\^[0-9]*\.[0-9]*\.[0-9]*"/"wrangler": "\^3.12.0"/' package.json
+    sed -i.tmp 's/"wrangler": "\^[0-9]*\.[0-9]*\.[0-9]*"/"wrangler": "3.12.0"/' package.json
     rm package.json.tmp 2>/dev/null || true
 fi
 
@@ -99,12 +99,18 @@ if [ $? -ne 0 ]; then
     echo -e "${RED}依賴安裝失敗，嘗試使用 --no-optional --no-fund --legacy-peer-deps${NC}"
     npm install --no-optional --no-fund --legacy-peer-deps
     if [ $? -ne 0 ]; then
-        echo -e "${RED}依賴安裝失敗，嘗試恢復原始 package.json 並重新安裝...${NC}"
-        mv package.json.bak package.json
+        echo -e "${RED}依賴安裝失敗，嘗試不使用 @cloudflare/d1 套件...${NC}"
+        
+        # 移除 @cloudflare/d1 依賴
+        sed -i.tmp '/"@cloudflare\/d1":/d' package.json
+        rm package.json.tmp 2>/dev/null || true
+        echo -e "${YELLOW}已移除 @cloudflare/d1 依賴，再次嘗試安裝...${NC}"
+        
         npm install --legacy-peer-deps
         if [ $? -ne 0 ]; then
             echo -e "${RED}依賴安裝失敗，請手動檢查 package.json 中的依賴版本${NC}"
-            echo -e "${YELLOW}您可以嘗試執行: npm view @cloudflare/d1 versions --json${NC}"
+            echo -e "${YELLOW}可用的 @cloudflare/d1 版本: 1.1.0, 1.2.0, 1.3.0, 1.4.0, 1.4.1${NC}"
+            mv package.json.bak package.json
             exit 1
         fi
     fi
