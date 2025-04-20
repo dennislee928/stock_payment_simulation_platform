@@ -15,8 +15,6 @@
 
 ---
 
-1
-
 ## 🔧 技術架構
 
 | 技術面向     | 說明                                                    |
@@ -25,8 +23,7 @@
 | **狀態管理** | 使用 Pinia 管理「購股清單」、「登入狀態」與「用戶資訊」 |
 | **金流整合** | ECPay 測試 API（信用卡／超商付款模擬）                  |
 | **後端處理** | `server/api/` 處理 callback 與訂單儲存邏輯              |
-| **部署**     | Vercel / Netlify（SSR 支援）                            |
-| **安全性**   | `middleware` 搭配 `definePageMeta()` 控制權限頁面       |
+| **部署**     | Cloudflare Pages + GitHub Actions                       |
 
 ---
 
@@ -55,13 +52,41 @@
 
 ```bash
 # 安裝依賴
-yarn install
+npm install
 
-# 開發模式啟動
-yarn dev
+# 啟動開發伺服器 (http://localhost:3000)
+npm run dev
 
-# Nuxt SSR 預設使用 http://localhost:3000
+# 構建生產版本
+npm run build
+
+# 預覽生產版本
+npm run preview
 ```
+
+---
+
+## 🚀 部署流程
+
+專案使用 GitHub Actions 自動部署到 Cloudflare Pages：
+
+1. **自動部署**：每次 push 到 main 分支自動觸發部署流程
+2. **手動部署**：在 GitHub 專案頁面 → Actions → Deploy to Cloudflare Pages → Run workflow
+
+### 環境變數設定
+
+在 Cloudflare Pages 的項目設定中需要添加以下環境變數：
+
+- `ECPAY_MERCHANT_ID`: ECPay 商店代號
+- `ECPAY_HASH_KEY`: ECPay HashKey
+- `ECPAY_HASH_IV`: ECPay HashIV
+- `TWSE_API_BASE`: 台灣證券交易所 API 基礎 URL
+
+在 GitHub Secrets 中需設定：
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_PROJECT_NAME`
 
 ---
 
@@ -83,6 +108,9 @@ yarn dev
 ├── .env                 # 金鑰等敏感資訊（.gitignore 中排除）
 ├── package.json
 ├── tsconfig.json
+├── .github/
+│   └── workflows/
+│       └── deploy.yml   # GitHub Actions 部署工作流程
 ├── server/
 │   ├── api/
 │   │   ├── order/submit.post.ts        # 虛擬下單，呼叫綠界 API
@@ -108,6 +136,7 @@ yarn dev
 ├── stores/
 │   ├── auth.ts                         # Pinia 登入狀態與 token 儲存
 │   ├── cart.ts                         # Pinia 虛擬購物車模組
+│   ├── order.ts                        # Pinia 訂單管理模組
 │   └── stocks.ts                       # Pinia 股票快取與展示資訊
 ├── assets/
 │   ├── styles/
@@ -125,7 +154,8 @@ yarn dev
 
 - 🔗 [TWSE OpenAPI 文件](https://openapi.twse.com.tw/)
 - 🔗 [ECPay 測試介接說明](https://developer.ecpay.com.tw/ServiceIntro/Detail?id=57)
-- 🔗 [Vercel Nuxt 3 部署指南](https://nuxt.com/docs/guide/deploy/vercel)
+- 🔗 [Cloudflare Pages 部署指南](https://developers.cloudflare.com/pages/)
+- 🔗 [GitHub Actions 文件](https://docs.github.com/en/actions)
 - 📦 [我的 DockerHub 範例映像](https://hub.docker.com/u/dennisleetw)
 - 💼 [Dennis GitHub 主頁](https://github.com/dennislee928)
 

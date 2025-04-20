@@ -31,7 +31,7 @@ export default defineNuxtConfig({
     },
   },
   nitro: {
-    preset: "vercel",
+    preset: "cloudflare-pages",
     esbuild: {
       options: {
         target: "es2019",
