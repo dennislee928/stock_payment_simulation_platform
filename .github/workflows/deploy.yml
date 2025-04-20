@@ -39,23 +39,23 @@ jobs:
           # 創建 tailwind.config.js 文件（如果不存在）
           if [ ! -f "tailwind.config.js" ]; then
             echo "創建 tailwind.config.js..."
-            cat > tailwind.config.js << 'TAILWIND_EOF'
-            /** @type {import('tailwindcss').Config} */
-            module.exports = {
-              content: [
-                "./components/**/*.{js,vue,ts}",
-                "./layouts/**/*.vue",
-                "./pages/**/*.vue",
-                "./plugins/**/*.{js,ts}",
-                "./app.vue",
-                "./nuxt.config.{js,ts}",
-              ],
-              theme: {
-                extend: {},
-              },
-              plugins: [],
-            }
-            TAILWIND_EOF
+            cat > tailwind.config.js << TAILWIND_EOF
+          /** @type {import('tailwindcss').Config} */
+          module.exports = {
+            content: [
+             "./components/**/*.{js,vue,ts}",
+             "./layouts/**/*.vue",
+             "./pages/**/*.vue",
+             "./plugins/**/*.{js,ts}",
+             "./app.vue",
+             "./nuxt.config.{js,ts}",
+            ],
+            theme: {
+             extend: {},
+             },
+            plugins: [],
+          }
+          TAILWIND_EOF
           fi
 
           # 修改 package.json
