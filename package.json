@@ -4,7 +4,7 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
+    "generate": "nuxt generate --no-prerender",
     "preview": "nuxt preview",
     "prepare": "node vercel-build-prepare.js",
     "postinstall": "nuxt prepare"

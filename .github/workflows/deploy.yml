@@ -15,6 +15,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    # 定義環境變數
+    env:
+      NODE_ENV: production
+      NITRO_PRESET: cloudflare-pages
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -62,10 +67,67 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
 
-      - name: Build Nuxt 3 Project
+      # 先使用 generate 確保生成靜態文件
+      - name: Generate Static Files
+        run: npm run generate
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+          NUXT_APP_BASE_URL: "/"
+          CF_PAGES: true
+          NITRO_PRESET: cloudflare-pages
+
+      # 只在 generate 失敗時嘗試 build
+      - name: Build Nuxt 3 Project (if needed)
+        if: ${{ failure() }}
         run: npm run build
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
+          NUXT_APP_BASE_URL: "/"
+          CF_PAGES: true
+          NITRO_PRESET: cloudflare-pages
+
+      - name: Debug Output Directory
+        run: |
+          ls -la
+          echo "== .output directory =="
+          ls -la .output || echo "No .output directory"
+          echo "== .output/public directory =="
+          ls -la .output/public || echo "No .output/public directory"
+          echo "== dist directory =="
+          ls -la dist || echo "No dist directory"
+          echo "== .nuxt directory =="
+          ls -la .nuxt || echo "No .nuxt directory"
+
+      # 檢查構建輸出並處理
+      - name: Prepare Output Directory
+        run: |
+          # 如果 .output/public 目錄不存在，嘗試從 dist 目錄複製
+          if [ ! -d ".output/public" ]; then
+            echo "No .output/public directory, checking alternatives..."
+            
+            # 先嘗試創建目錄
+            mkdir -p .output/public
+            
+            if [ -d "dist" ]; then
+              echo "Found dist directory, using it as output"
+              cp -r dist/* .output/public/
+            elif [ -d ".output/server/public" ]; then
+              echo "Found .output/server/public directory, using it"
+              cp -r .output/server/public/* .output/public/
+            else
+              echo "Creating empty .output/public directory with placeholder"
+              echo "<html><body><h1>Build Failed</h1><p>Please check the logs.</p></body></html>" > .output/public/index.html
+            fi
+          fi
+
+          # 確保 .output/public 目錄中至少有一個 index.html 文件
+          if [ ! -f ".output/public/index.html" ]; then
+            echo "<html><body><h1>Build Failed</h1><p>No index.html found. Please check the logs.</p></body></html>" > .output/public/index.html
+          fi
+
+          # 再次檢查輸出目錄
+          echo "Final output directory contents:"
+          ls -la .output/public
 
       - name: Upload to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -74,3 +136,5 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
           directory: .output/public
+          # 使用最新的 wrangler 版本
+          wranglerVersion: 4

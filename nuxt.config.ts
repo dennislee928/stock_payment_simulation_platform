@@ -37,6 +37,10 @@ export default defineNuxtConfig({
         target: "es2019",
       },
     },
+    output: {
+      dir: ".output",
+      publicDir: ".output/public",
+    },
   },
   app: {
     head: {
@@ -58,5 +62,7 @@ export default defineNuxtConfig({
         },
       ],
     },
+    buildAssetsDir: "/_nuxt/",
   },
+  buildDir: ".nuxt",
 });
