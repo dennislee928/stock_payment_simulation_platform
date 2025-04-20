@@ -14,13 +14,18 @@ handle_error() {
   exit 1
 }
 
-# 步驟 1: 構建專案
-echo -e "${YELLOW}步驟 1: 開始構建專案...${NC}"
+# 步驟 1: 清理構建環境
+echo -e "${YELLOW}步驟 1: 清理構建環境...${NC}"
+rm -rf .nuxt .output node_modules/.vite
+echo -e "${GREEN}構建環境已清理！${NC}"
+
+# 步驟 2: 構建專案
+echo -e "${YELLOW}步驟 2: 開始構建專案...${NC}"
 npm run build || handle_error "構建失敗"
 echo -e "${GREEN}構建成功完成！${NC}"
 
-# 步驟 2: 檢查輸出目錄
-echo -e "${YELLOW}步驟 2: 檢查輸出目錄...${NC}"
+# 步驟 3: 檢查輸出目錄
+echo -e "${YELLOW}步驟 3: 檢查輸出目錄...${NC}"
 
 # 檢查目錄結構
 if [ -d ".output/public" ]; then
@@ -34,32 +39,16 @@ else
   handle_error "未找到可部署的輸出目錄"
 fi
 
-# 步驟 3: 檢查是否需要生成額外檔案
-echo -e "${YELLOW}步驟 3: 檢查必要的檔案...${NC}"
-
-if [ "$DEPLOY_DIR" = ".output" ]; then
-  # 確保有 index.html
-  if [ ! -f ".output/public/index.html" ] && [ -f ".output/_worker.js" ]; then
-    echo -e "${YELLOW}使用 Worker 模式進行部署${NC}"
-  fi
-fi
-
-# 步驟 4: 部署到 Cloudflare Pages
+# 步驟 4: 部署到 Cloudflare Pages - 不嘗試傳遞環境變數
 echo -e "${YELLOW}步驟 4: 開始部署到 Cloudflare Pages...${NC}"
-
-# 直接部署，不嘗試設定環境變數
-# Cloudflare 會在網站儀表板中管理環境變數
 echo -e "${YELLOW}部署目錄: $DEPLOY_DIR${NC}"
-echo -e "${YELLOW}注意: 請在 Cloudflare Pages 儀表板中手動設定環境變數${NC}"
 npx wrangler pages deploy "$DEPLOY_DIR" || handle_error "部署失敗"
 
-# 步驟 5: 顯示專案列表
-echo -e "${YELLOW}步驟 5: 顯示 Cloudflare Pages 專案列表...${NC}"
-npx wrangler pages project list
-
+# 步驟 5: 部署完成提示
 echo -e "${GREEN}部署流程完成！您的網站已成功部署到 Cloudflare Pages。${NC}"
-echo -e "${YELLOW}重要：請在 Cloudflare 儀表板設定以下環境變數：${NC}"
-echo -e "${YELLOW}TWSE_API_BASE -> https://openapi.twse.com.tw${NC}"
-echo -e "${YELLOW}ECPAY_MERCHANT_ID -> 2000132${NC}"
-echo -e "${YELLOW}ECPAY_HASH_KEY -> 5294y06JbISpM5x9${NC}"
-echo -e "${YELLOW}ECPAY_HASH_IV -> v77hoKGq4kWxNNIS${NC}"
+echo -e "${YELLOW}重要提示：請在 Cloudflare 儀表板設定以下環境變數：${NC}"
+echo -e "${YELLOW}1. TWSE_API_BASE = https://openapi.twse.com.tw${NC}"
+echo -e "${YELLOW}2. ECPAY_MERCHANT_ID = 2000132${NC}"
+echo -e "${YELLOW}3. ECPAY_HASH_KEY = 5294y06JbISpM5x9${NC}"
+echo -e "${YELLOW}4. ECPAY_HASH_IV = v77hoKGq4kWxNNIS${NC}"
+echo -e "${YELLOW}設定方式：在 Cloudflare 儀表板 > Pages > 您的專案 > 設定 > 環境變數${NC}"
