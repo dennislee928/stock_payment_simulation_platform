@@ -122,11 +122,9 @@ jobs:
         run: npm install -D sass-embedded
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
-          directory: .output/public
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+        uses: cloudflare/wrangler-action@v3
+         with:
+          apiToken: ${{ secrets.CLOUD_FLARE_DEPLOY_API_TOKEN }}
+          accountId: ${{ secrets.CLOUD_FLARE_DEPLOY_ACCOUNT_ID }}
+          command: pages deploy .output/public --project-name=stock-payment-simulation-platform --commit-dirty=true
+
