@@ -2,7 +2,11 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ["@pinia/nuxt", "@nuxtjs/tailwindcss"],
-  css: ["~/assets/css/main.css"],
+  css: [
+    "~/assets/css/main.css",
+    "~/stores/assets/styles/base.scss",
+    "~/stores/assets/styles/theme-dark.scss",
+  ],
   runtimeConfig: {
     public: {
       ecpayMerchantId: process.env.ECPAY_MERCHANT_ID,
@@ -17,6 +21,13 @@ export default defineNuxtConfig({
     },
     ssr: {
       noExternal: ["ant-design-vue"],
+    },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: '@import "~/stores/assets/styles/variables.scss";',
+        },
+      },
     },
   },
   nitro: {

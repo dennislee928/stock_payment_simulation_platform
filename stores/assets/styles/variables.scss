@@ -1,0 +1,60 @@
+// 顏色變數
+$primary-color: #1677ff;
+$primary-color-light: #40a9ff;
+$primary-color-dark: #0958d9;
+$success-color: #52c41a;
+$warning-color: #faad14;
+$error-color: #f5222d;
+$info-color: #1890ff;
+
+// 中性色調
+$text-color-primary: rgba(0, 0, 0, 0.85);
+$text-color-secondary: rgba(0, 0, 0, 0.65);
+$text-color-disabled: rgba(0, 0, 0, 0.25);
+$border-color: #f0f0f0;
+$background-color: #f5f5f5;
+$component-background: #ffffff;
+
+// 字體
+$font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+$font-size-base: 14px;
+$font-size-sm: 12px;
+$font-size-lg: 16px;
+$font-size-xl: 20px;
+$font-size-xxl: 24px;
+
+// 間距
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-xxl: 48px;
+
+// 斷點 (RWD)
+$screen-xs: 480px;
+$screen-sm: 576px;
+$screen-md: 768px;
+$screen-lg: 992px;
+$screen-xl: 1200px;
+$screen-xxl: 1600px;
+
+// 邊框圓角
+$border-radius-base: 4px;
+$border-radius-sm: 2px;
+$border-radius-lg: 8px;
+
+// 陰影
+$box-shadow-base: 0 2px 8px rgba(0, 0, 0, 0.15);
+$box-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.1);
+$box-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.2);
+
+// 購物車相關
+$cart-item-bg: #fafafa;
+$cart-total-bg: #f0f8ff;
+
+// 股票相關
+$stock-positive: #f56565;
+$stock-negative: #48bb78;
+$stock-header-bg: #f9fafb;
