@@ -123,7 +123,7 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
-         with:
+        with:
           apiToken: ${{ secrets.CLOUD_FLARE_DEPLOY_API_TOKEN }}
           accountId: ${{ secrets.CLOUD_FLARE_DEPLOY_ACCOUNT_ID }}
           command: pages deploy .output/public --project-name=stock-payment-simulation-platform --commit-dirty=true
