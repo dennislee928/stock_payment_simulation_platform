@@ -1,6 +1,6 @@
 {
-  "buildCommand": "nuxt build",
-  "installCommand": "yarn install",
+  "buildCommand": "node vercel-build-prepare.js && nuxt build",
+  "installCommand": "node vercel-build-prepare.js && yarn install --frozen-lockfile",
   "outputDirectory": ".output/public",
   "devCommand": "nuxt dev",
   "headers": [
