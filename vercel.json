@@ -1,7 +1,8 @@
 {
-  "buildCommand": "NITRO_PRESET=vercel nuxt build",
+  "buildCommand": "nuxt build",
+  "installCommand": "npm install",
+  "outputDirectory": ".output/public",
   "devCommand": "nuxt dev",
-  "regions": ["iad1"],
   "headers": [
     {
       "source": "/api/(.*)",
