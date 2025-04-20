@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -30,7 +32,19 @@ jobs:
           node-version: "20.x"
           cache: "npm"
 
+      - name: Check for Cache
+        id: cache-check
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            .nuxt
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Clean Previous Installations
+        if: steps.cache-check.outputs.cache-hit != 'true'
         run: rm -rf node_modules package-lock.json .nuxt .output dist
 
       - name: Fix and Update Dependencies
@@ -73,9 +87,6 @@ jobs:
           fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
           EOF
 
-          # 明確告知 npm 需要重新安裝相依性
-          npm install
-
       - name: Generate Configuration Files
         run: |
           if [ ! -f "tailwind.config.js" ]; then
@@ -116,15 +127,38 @@ jobs:
           fi
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Force Install sass-embedded
         run: npm install -D sass-embedded
 
+      - name: Build Project
+        run: npm run build
+
+      - name: Check if .output/public exists
+        id: check_output
+        run: |
+          if [ -d ".output/public" ]; then
+            echo "output_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "output_exists=false" >> $GITHUB_OUTPUT
+            echo "::error::構建輸出目錄不存在，請檢查構建過程"
+            exit 1
+          fi
+
       - name: Deploy to Cloudflare Pages
+        if: steps.check_output.outputs.output_exists == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy .output/public --project-name=stock-payment-simulation-platform --commit-dirty=true
 
+      - name: Notify Deployment Result
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ 部署成功完成！"
+          else
+            echo "❌ 部署失敗，請檢查上方錯誤訊息"
+          fi
