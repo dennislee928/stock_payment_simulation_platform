@@ -21,6 +21,14 @@ export default defineNuxtConfig({
       noExternal: ["ant-design-vue"],
     },
   },
+  nitro: {
+    preset: "vercel",
+    esbuild: {
+      options: {
+        target: "es2019",
+      },
+    },
+  },
   app: {
     head: {
       title: "股票付款模擬平台",

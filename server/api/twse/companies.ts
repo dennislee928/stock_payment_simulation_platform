@@ -1,10 +1,10 @@
-import { H3Event } from "h3";
+import type { H3Event } from "h3";
 
 /**
  * 代理API，用於解決CORS問題
  * 從台灣證交所獲取上市公司資料
  */
-export default defineEventHandler(async (event: H3Event) => {
+export default defineEventHandler(async (event) => {
   try {
     const config = useRuntimeConfig();
     const twseBase = config.public.twseApiBase;
@@ -14,8 +14,8 @@ export default defineEventHandler(async (event: H3Event) => {
 
     if (!response.ok) {
       throw createError({
-        statusCode: response.status,
-        statusMessage: `證交所API回應錯誤: ${response.statusText}`,
+        status: response.status,
+        statusText: `證交所API回應錯誤: ${response.statusText}`,
       });
     }
 
@@ -27,8 +27,8 @@ export default defineEventHandler(async (event: H3Event) => {
     console.error("獲取上市公司資料時發生錯誤:", error);
 
     throw createError({
-      statusCode: 500,
-      statusMessage: "無法取得上市公司資料，請稍後再試",
+      status: 500,
+      statusText: "無法取得上市公司資料，請稍後再試",
     });
   }
 });

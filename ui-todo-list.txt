@@ -10,7 +10,14 @@
 2. **Ant Design Vue 整合**
    - 安裝 `ant-design-vue@next` 套件
    - 創建 `plugins/antd.ts` 設定 Ant Design Vue 插件
-   - 更新 `nuxt.config.ts` 載入 Ant Design CSS 和設定環境變數
+   - 改用按需引入組件，而非全局引入
+   - 使用 'ant-design-vue/es/style/index.css' 替代全局 CSS
+
+3. **Vercel 部署問題解決**
+   - 改用按需引入 Ant Design Vue 組件，解決 CSS 解析問題
+   - 配置 Vite 的 optimizeDeps 和 ssr 選項
+   - 添加 Nitro 配置，使用 preset: 'vercel'
+   - 修復 TypeScript 類型問題
 
 ## UI 元件庫結構
 
@@ -139,16 +146,16 @@ CORS（跨來源資源共享）問題是因為網頁應用（如 Vercel 部署�
        
        if (!response.ok) {
          throw createError({
-           statusCode: response.status,
-           statusMessage: `證交所API回應錯誤: ${response.statusText}`,
+           status: response.status,
+           statusText: `證交所API回應錯誤: ${response.statusText}`,
          });
        }
        
        return await response.json();
      } catch (error) {
        throw createError({
-         statusCode: 500,
-         statusMessage: '無法取得上市公司資料，請稍後再試',
+         status: 500,
+         statusText: '無法取得上市公司資料，請稍後再試',
        });
      }
    });
@@ -169,8 +176,60 @@ CORS（跨來源資源共享）問題是因為網頁應用（如 Vercel 部署�
 - 可以在 API 代理中加入錯誤處理和格式轉換
 - 更好的安全性和維護性
 
+## Vercel 部署問題解決詳解
+
+在 Vercel 上部署 Nuxt 3 + Ant Design Vue 專案時會遇到 CSS 引入問題，主要是 Rollup 無法正確解析 `ant-design-vue/dist/antd.css`。解決方案：
+
+1. **按需引入組件而非全局引入**
+   
+   ```typescript
+   // plugins/antd.ts
+   // 原來的方式
+   import Antd from "ant-design-vue";
+   import "ant-design-vue/dist/antd.css";
+   
+   // 改為
+   import { Button, Input, Card, ... } from 'ant-design-vue';
+   import 'ant-design-vue/es/style/index.css';
+   ```
+
+2. **使用類型斷言解決 TypeScript 錯誤**
+
+   ```typescript
+   // 使用類型斷言
+   const app = nuxtApp.vueApp as any;
+   
+   // 然後註冊組件
+   app.component('a-button', Button);
+   app.component('a-input', Input);
+   // ...
+   ```
+
+3. **配置 Vite 和 Nitro**
+
+   ```typescript
+   // nuxt.config.ts
+   export default defineNuxtConfig({
+     // ...
+     vite: {
+       optimizeDeps: {
+         include: ['ant-design-vue/es/style/index.css']
+       },
+       ssr: {
+         noExternal: ['ant-design-vue']
+       }
+     },
+     nitro: {
+       preset: 'vercel'
+     }
+   });
+   ```
+
+這些修改可以確保在 Vercel 上成功部署，同時保持 Ant Design Vue 組件的完整功能。
+
 ## 注意事項
 
 - 請確保已安裝 `ant-design-vue@next` 並配置好相關插件
 - 確保 Nuxt 版本為 3.x 以上
 - 在部署到生產環境前，請正確設定 .env 檔案中的 TWSE_API_BASE 變數
+- 在 Vercel 上部署時要檢查環境變數是否已正確設置
