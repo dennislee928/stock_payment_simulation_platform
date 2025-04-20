@@ -1,6 +1,17 @@
 import { ref, computed } from "vue";
 import { useStocksStore } from "~/stores/stocks";
 
+// 定義股票數據的介面
+interface StockData {
+  symbol: string;
+  name: string;
+  industry?: string;
+  price: number;
+  change?: number;
+  changePercent?: number;
+  date?: string;
+}
+
 export function useStocks() {
   const config = useRuntimeConfig();
   const twseBase = config.public.twseApiBase;
@@ -16,10 +27,8 @@ export function useStocks() {
     error.value = null;
 
     try {
-      // 取得上市公司基本資料
-      const { data: companies } = await useFetch<any[]>(
-        `${twseBase}/opendata/t187ap03_L`
-      );
+      // 使用我們的代理API而非直接存取證交所API
+      const { data: companies } = await useFetch<any[]>(`/api/twse/companies`);
 
       if (!companies.value || !Array.isArray(companies.value)) {
         throw new Error("無法取得公司資料");
@@ -66,7 +75,7 @@ export function useStocks() {
   async function getStockPrice(symbol: string) {
     try {
       // 從後端 API 取得股票最新價格 (使用 server route)
-      const { data } = await useFetch(`/api/stocks/${symbol}`);
+      const { data } = await useFetch<StockData>(`/api/stocks/${symbol}`);
 
       if (data.value && data.value.price) {
         // 更新快取

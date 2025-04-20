@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
 
   if (!body || !body.items || !body.totalAmount || !body.contact) {
     throw createError({
-      status: 400,
+      statusCode: 400,
       statusMessage: "缺少必要的訂單資訊",
     });
   }
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   // 檢查必要欄位
   if (!body.paymentMethod || !body.items || !body.contactInfo) {
     throw createError({
-      status: 400,
+      statusCode: 400,
       statusMessage: "缺少必要欄位",
     });
   }
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
   const validPaymentMethods = ["ecpay", "creditcard"];
   if (!validPaymentMethods.includes(body.paymentMethod)) {
     throw createError({
-      status: 400,
+      statusCode: 400,
       statusMessage: "不支援的支付方式",
     });
   }
@@ -74,7 +74,7 @@ export default defineEventHandler(async (event) => {
     // 驗證信用卡資訊
     if (!cardInfo.cardNumber || !cardInfo.expiryDate || !cardInfo.cvv) {
       throw createError({
-        status: 400,
+        statusCode: 400,
         statusMessage: "信用卡資訊不完整",
       });
     }
