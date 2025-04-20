@@ -30,13 +30,56 @@ jobs:
           node-version: "20.x"
           cache: "npm"
 
-      - name: Setup Configuration
-        run: |
-          rm -rf node_modules package-lock.json .nuxt .output dist || true
+      - name: Clean Previous Installations
+        run: rm -rf node_modules package-lock.json .nuxt .output dist
 
-          echo "創建 tailwind.config.js..."
-          cat <<EOF > tailwind.config.js
-          /** @type {import('tailwindcss').Config} */
+      - name: Fix and Update Dependencies
+        run: |
+          node << EOF
+          const fs = require('fs');
+
+          const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+          const devDeps = {
+            "@nuxtjs/tailwindcss": "^6.10.3",
+            "tailwindcss": "^3.4.0",
+            "postcss": "^8.4.33",
+            "autoprefixer": "^10.4.17",
+            "@rollup/wasm-node": "^4.13.0",
+            "vitest": "^1.1.0",
+            "@vitejs/plugin-vue": "^5.0.0",
+            "@vitest/ui": "^1.1.0",
+            "sass-embedded": "^1.69.5"
+          };
+
+          packageJson.devDependencies = { ...packageJson.devDependencies, ...devDeps };
+
+          packageJson.resolutions = {
+            ...packageJson.resolutions,
+            "rollup": "npm:@rollup/wasm-node"
+          };
+
+          packageJson.overrides = {
+            ...packageJson.overrides,
+            "rollup": "npm:@rollup/wasm-node"
+          };
+
+          packageJson.scripts.build = "nuxt build";
+          packageJson.scripts.postinstall = "nuxt prepare";
+          packageJson.scripts.test = "vitest";
+          packageJson.scripts["test:ui"] = "vitest --ui";
+
+          delete packageJson.scripts.preinstall;
+
+          fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));
+          EOF
+
+          # 明確告知 npm 需要重新安裝相依性
+          npm install
+
+      - name: Generate Configuration Files
+        run: |
+          if [ ! -f "tailwind.config.js" ]; then
+            cat <<EOT > tailwind.config.js
           module.exports = {
             content: [
               "./components/**/*.{js,vue,ts}",
@@ -46,54 +89,34 @@ jobs:
               "./app.vue",
               "./nuxt.config.{js,ts}",
             ],
-            theme: {
-              extend: {},
-            },
+            theme: { extend: {} },
             plugins: [],
           }
-          EOF
-
-          echo "// Package fix script" > package-fix.js
-          echo "const fs = require('fs');" >> package-fix.js
-          echo "const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));" >> package-fix.js
-          echo "packageJson.devDependencies = packageJson.devDependencies || {};" >> package-fix.js
-          echo "packageJson.devDependencies['@nuxtjs/tailwindcss'] = '^6.10.3';" >> package-fix.js
-          echo "packageJson.devDependencies['tailwindcss'] = '^3.4.0';" >> package-fix.js
-          echo "packageJson.devDependencies['postcss'] = '^8.4.33';" >> package-fix.js
-          echo "packageJson.devDependencies['autoprefixer'] = '^10.4.17';" >> package-fix.js
-          echo "packageJson.devDependencies['@rollup/wasm-node'] = '^4.13.0';" >> package-fix.js
-          echo "packageJson.devDependencies['vitest'] = '^1.1.0';" >> package-fix.js
-          echo "packageJson.devDependencies['@vitejs/plugin-vue'] = '^5.0.0';" >> package-fix.js
-          echo "packageJson.devDependencies['@vitest/ui'] = '^1.1.0';" >> package-fix.js
-          echo "packageJson.devDependencies['sass-embedded'] = '^1.69.5';" >> package-fix.js
-          echo "packageJson.resolutions = packageJson.resolutions || {};" >> package-fix.js
-          echo "packageJson.resolutions['rollup'] = 'npm:@rollup/wasm-node';" >> package-fix.js
-          echo "packageJson.overrides = packageJson.overrides || {};" >> package-fix.js
-          echo "packageJson.overrides['rollup'] = 'npm:@rollup/wasm-node';" >> package-fix.js
-          echo "packageJson.scripts.build = 'nuxt build';" >> package-fix.js
-          echo "packageJson.scripts.postinstall = 'nuxt prepare';" >> package-fix.js
-          echo "packageJson.scripts.test = 'vitest';" >> package-fix.js
-          echo "packageJson.scripts['test:ui'] = 'vitest --ui';" >> package-fix.js
-          echo "delete packageJson.scripts.preinstall;" >> package-fix.js
-          echo "fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));" >> package-fix.js
-          node package-fix.js
-          rm package-fix.js
+          EOT
+          fi
 
           if [ ! -f "postcss.config.js" ]; then
             echo "module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } };" > postcss.config.js
           fi
 
           if [ ! -f "vitest.config.ts" ]; then
-            echo "import { defineConfig } from 'vitest/config'" > vitest.config.ts
-            echo "import vue from '@vitejs/plugin-vue'" >> vitest.config.ts
-            echo "export default defineConfig({" >> vitest.config.ts
-            echo "  plugins: [vue()]," >> vitest.config.ts
-            echo "  test: { environment: 'jsdom', include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'], exclude: ['node_modules', 'dist', '.nuxt', '.output'] }" >> vitest.config.ts
-            echo "})" >> vitest.config.ts
+            cat <<EOT > vitest.config.ts
+          import { defineConfig } from 'vitest/config';
+          import vue from '@vitejs/plugin-vue';
+
+          export default defineConfig({
+            plugins: [vue()],
+            test: {
+              environment: 'jsdom',
+              include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
+              exclude: ['node_modules', 'dist', '.nuxt', '.output']
+            }
+          });
+          EOT
           fi
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Ensure sass-embedded is installed
+        run: npm install -D sass-embedded
 
       - name: Build Nuxt Application
         run: npm run build
