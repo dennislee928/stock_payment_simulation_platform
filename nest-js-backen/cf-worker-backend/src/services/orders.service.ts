@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { D1Service, OrderEntity } from '../d1/d1.service';
+import { v4 as uuidv4 } from 'uuid';
 
 export enum OrderStatus {
 	PENDING = 'pending',
@@ -31,7 +32,7 @@ export class OrdersService {
 	constructor(private readonly d1Service: D1Service) {}
 
 	async createOrder(orderData: CreateOrderDto): Promise<OrderEntity> {
-		const id = crypto.randomUUID();
+		const id = uuidv4();
 
 		const order: Omit<OrderEntity, 'created_at'> = {
 			id,
@@ -45,6 +46,7 @@ export class OrdersService {
 		try {
 			return await this.d1Service.createOrder(order);
 		} catch (error) {
+			console.error('創建訂單錯誤:', error);
 			throw new BadRequestException('建立訂單失敗');
 		}
 	}
@@ -85,8 +87,13 @@ export class OrdersService {
 		}
 
 		// 更新資料庫中的訂單狀態
-		// 注意: 這裡應該實作 D1Service 的 updateOrder 方法
-		// 由於目前模擬實作，我們直接返回更新後的訂單
+		const success = await this.d1Service.updateOrderStatus(id, updateData.status);
+
+		if (!success) {
+			throw new BadRequestException('更新訂單狀態失敗');
+		}
+
+		// 返回更新後的訂單
 		const updatedOrder: OrderEntity = {
 			...order,
 			status: updateData.status,
@@ -99,7 +106,10 @@ export class OrdersService {
 		const order = await this.getOrderById(id);
 
 		// 在實際應用中，通常不會真正刪除訂單，而是標記為已刪除
-		// 這裡需要實作 D1Service 的 deleteOrder 或 markOrderAsDeleted 方法
-		// 由於目前是模擬實作，我們只檢查訂單是否存在
+		const success = await this.d1Service.deleteOrder(id);
+
+		if (!success) {
+			throw new BadRequestException('刪除訂單失敗');
+		}
 	}
 }
