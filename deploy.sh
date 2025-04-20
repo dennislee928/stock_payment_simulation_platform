@@ -47,35 +47,19 @@ fi
 # 步驟 4: 部署到 Cloudflare Pages
 echo -e "${YELLOW}步驟 4: 開始部署到 Cloudflare Pages...${NC}"
 
-# 從 .env 檔案中讀取環境變數
-if [ -f ".env" ]; then
-  echo -e "${YELLOW}從 .env 檔案讀取環境變數${NC}"
-  
-  # 讀取環境變數並建立命令
-  DEPLOY_CMD="npx wrangler pages deploy \"$DEPLOY_DIR\""
-  
-  while IFS='=' read -r KEY VALUE || [ -n "$KEY" ]; do
-    # 跳過空行和註解
-    [[ -z "$KEY" || "$KEY" =~ ^# ]] && continue
-    
-    # 清理可能的引號
-    VALUE=$(echo "$VALUE" | sed -e 's/^"//' -e 's/"$//')
-    
-    # 添加每個環境變數作為單獨的 --env 參數
-    DEPLOY_CMD="$DEPLOY_CMD --env $KEY=\"$VALUE\""
-  done < .env
-  
-  echo -e "${YELLOW}部署目錄: $DEPLOY_DIR 並設定環境變數${NC}"
-  # 執行構建的命令
-  eval "$DEPLOY_CMD" || handle_error "部署失敗"
-else
-  echo -e "${YELLOW}部署目錄: $DEPLOY_DIR (未找到 .env 檔案)${NC}"
-  npx wrangler pages deploy "$DEPLOY_DIR" || handle_error "部署失敗"
-fi
+# 直接部署，不嘗試設定環境變數
+# Cloudflare 會在網站儀表板中管理環境變數
+echo -e "${YELLOW}部署目錄: $DEPLOY_DIR${NC}"
+echo -e "${YELLOW}注意: 請在 Cloudflare Pages 儀表板中手動設定環境變數${NC}"
+npx wrangler pages deploy "$DEPLOY_DIR" || handle_error "部署失敗"
 
 # 步驟 5: 顯示專案列表
 echo -e "${YELLOW}步驟 5: 顯示 Cloudflare Pages 專案列表...${NC}"
 npx wrangler pages project list
 
 echo -e "${GREEN}部署流程完成！您的網站已成功部署到 Cloudflare Pages。${NC}"
-echo -e "${YELLOW}請查看上方部署輸出以獲取網站 URL。${NC}"
+echo -e "${YELLOW}重要：請在 Cloudflare 儀表板設定以下環境變數：${NC}"
+echo -e "${YELLOW}TWSE_API_BASE -> https://openapi.twse.com.tw${NC}"
+echo -e "${YELLOW}ECPAY_MERCHANT_ID -> 2000132${NC}"
+echo -e "${YELLOW}ECPAY_HASH_KEY -> 5294y06JbISpM5x9${NC}"
+echo -e "${YELLOW}ECPAY_HASH_IV -> v77hoKGq4kWxNNIS${NC}"
