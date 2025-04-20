@@ -2,12 +2,11 @@
   "name": "stock-payment-simulation-platform",
   "private": true,
   "scripts": {
-    "build": "node vercel-build-prepare.js && nuxt build",
+    "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "prepare": "node vercel-build-prepare.js",
-    "preinstall": "node vercel-build-prepare.js",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
@@ -28,6 +27,9 @@
     "typescript": "^5.3.3"
   },
   "resolutions": {
+    "rollup": "npm:@rollup/wasm-node"
+  },
+  "overrides": {
     "rollup": "npm:@rollup/wasm-node"
   }
 }
