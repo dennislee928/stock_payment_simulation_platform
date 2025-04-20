@@ -115,11 +115,11 @@ jobs:
           EOT
           fi
 
-      - name: Ensure sass-embedded is installed
-        run: npm install -D sass-embedded
+      - name: Install Dependencies
+        run: npm install
 
-      - name: Build Nuxt Application
-        run: npm run build
+      - name: Force Install sass-embedded
+        run: npm install -D sass-embedded
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
