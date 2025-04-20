@@ -1,0 +1,2 @@
+import{d as t,u as s,c as a}from"../../../nitro/nitro.mjs";const o=t((async t=>{try{const t=s().public.twseApiBase,o=await fetch(`${t}/opendata/t187ap03_L`);if(!o.ok)throw a({status:o.status,statusText:`證交所API回應錯誤: ${o.statusText}`});return await o.json()}catch(t){throw console.error("獲取上市公司資料時發生錯誤:",t),a({status:500,statusText:"無法取得上市公司資料，請稍後再試"})}}));export{o as default};
+//# sourceMappingURL=companies.mjs.map

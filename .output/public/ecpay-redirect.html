@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>處理付款中 - 股票付款模擬平台</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        background-color: #f7f7f7;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 32px;
+        text-align: center;
+        max-width: 500px;
+      }
+
+      h1 {
+        color: #2563eb;
+        margin-bottom: 16px;
+      }
+
+      p {
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 24px;
+      }
+
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 4px solid #2563eb;
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 24px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="spinner"></div>
+      <h1>處理您的付款</h1>
+      <p>請稍候，我們正在處理您的付款資訊...</p>
+      <p>
+        如果您沒有被自動導向，請<a href="/" id="homeLink">點擊這裡</a>返回首頁。
+      </p>
+    </div>
+
+    <script>
+      // 解析 URL 參數
+      function getQueryParams() {
+        const params = {};
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+
+        for (const [key, value] of urlParams.entries()) {
+          params[key] = value;
+        }
+
+        return params;
+      }
+
+      // 處理導向邏輯
+      window.addEventListener("DOMContentLoaded", () => {
+        const params = getQueryParams();
+        const orderId = params.orderId || "";
+
+        if (orderId) {
+          // 有訂單 ID，導向訂單結果頁
+          setTimeout(() => {
+            window.location.href = `/result?orderId=${orderId}`;
+          }, 2000);
+
+          // 更新返回連結
+          document.getElementById(
+            "homeLink"
+          ).href = `/result?orderId=${orderId}`;
+        } else {
+          // 無訂單 ID，導向首頁
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 2000);
+        }
+      });
+    </script>
+  </body>
+</html>
