@@ -11,7 +11,7 @@ command = "npm run build"
 [[d1_databases]]
 binding = "DB"
 database_name = "stock_orders"
-database_id = "30dc188e-9a49-4ee4-bd69-a63de46727a9" # 請替換為實際的 database_id
+database_id = "30dc188e-9a49-4ee4-bd69-a63de46727a9" # 已創建的數據庫 ID
 
 # 環境變數
 [vars]

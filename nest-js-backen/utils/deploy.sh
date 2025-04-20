@@ -12,9 +12,10 @@ echo "1. 找到正確的工作目錄"
 echo "2. 清理環境"
 echo "3. 修正依賴版本"
 echo "4. 安裝依賴"
-echo "5. 創建並初始化 D1 資料庫"
-echo "6. 構建專案"
-echo "7. 部署到 Cloudflare Workers"
+echo "5. 檢查和初始化 D1 資料庫"
+echo "6. 驗證並創建資料表"
+echo "7. 構建專案"
+echo "8. 部署到 Cloudflare Workers"
 echo ""
 
 # 確認執行
@@ -119,8 +120,8 @@ echo -e "${GREEN}✓ 依賴已安裝${NC}"
 # 刪除備份文件
 rm package.json.bak 2>/dev/null || true
 
-# 4. 創建並初始化 D1 資料庫
-echo -e "${YELLOW}4. 初始化 D1 資料庫...${NC}"
+# 4. 檢查和初始化 D1 資料庫
+echo -e "${YELLOW}4. 檢查和初始化 D1 資料庫...${NC}"
 
 # 確認 wrangler.toml 存在
 if [ ! -f "./wrangler.toml" ]; then
@@ -137,36 +138,76 @@ if [ -z "$DB_NAME" ]; then
     exit 1
 fi
 
-# 檢查資料庫是否已存在，如果不存在則創建
-echo -e "${YELLOW}檢查並創建資料庫 $DB_NAME...${NC}"
+# 檢查資料庫是否已存在
+echo -e "${YELLOW}檢查資料庫 $DB_NAME...${NC}"
 HAS_DB=$(npx wrangler d1 list 2>/dev/null | grep "$DB_NAME")
 
 if [ -z "$HAS_DB" ]; then
     echo -e "${YELLOW}資料庫 $DB_NAME 不存在，正在創建...${NC}"
     DB_RESULT=$(npx wrangler d1 create "$DB_NAME" 2>&1)
     if [ $? -ne 0 ]; then
-        echo -e "${RED}資料庫創建失敗:${NC}"
-        echo "$DB_RESULT"
-        exit 1
-    fi
-    
-    # 從輸出中提取 database_id
-    NEW_DB_ID=$(echo "$DB_RESULT" | grep -o 'database_id.*=.*"[^"]*"' | cut -d'"' -f2)
-    if [ -n "$NEW_DB_ID" ]; then
-        echo -e "${GREEN}資料庫已創建，ID: $NEW_DB_ID${NC}"
-        
-        # 更新 wrangler.toml 文件中的 database_id
-        sed -i.bak "s/database_id = \"[^\"]*\"/database_id = \"$NEW_DB_ID\"/" wrangler.toml
-        rm wrangler.toml.bak 2>/dev/null || true
-        
-        # 使用新的 DB_ID
-        DB_ID=$NEW_DB_ID
-    else
-        echo -e "${YELLOW}警告: 無法提取新創建的資料庫 ID，請手動更新 wrangler.toml${NC}"
-    fi
+        # 檢查是否是因為資料庫已存在而失敗
+        if [[ "$DB_RESULT" == *"A database with that name already exists"* ]]; then
+            echo -e "${YELLOW}資料庫 $DB_NAME 已經存在，但未在列表中找到${NC}"
+            
+            # 嘗試重新獲取資料庫列表
+            DB_LIST=$(npx wrangler d1 list --json 2>/dev/null)
+            if [ $? -eq 0 ]; then
+                # 使用 grep 和 sed 從 JSON 中提取 database_id
+                NEW_DB_ID=$(echo "$DB_LIST" | grep -o '"uuid":"[^"]*"' | grep -o '[^"]*$' | grep -m1 "")
+                if [ -n "$NEW_DB_ID" ]; then
+                    echo -e "${GREEN}找到資料庫 ID: $NEW_DB_ID${NC}"
+                    
+                    # 更新 wrangler.toml 文件中的 database_id
+                    sed -i.bak "s/database_id = \"[^\"]*\"/database_id = \"$NEW_DB_ID\"/" wrangler.toml
+                    rm wrangler.toml.bak 2>/dev/null || true
+                    
+                    # 使用新的 DB_ID
+                    DB_ID=$NEW_DB_ID
+                else
+                    echo -e "${YELLOW}無法從列表中提取資料庫 ID，使用當前配置繼續${NC}"
+                fi
+            else
+                echo -e "${YELLOW}無法獲取資料庫列表，使用當前配置繼續${NC}"
+            fi
+        else
+            echo -e "${RED}資料庫創建失敗:${NC}"
+            echo "$DB_RESULT"
+            exit 1
+        fi
+    } else {
+        # 從輸出中提取 database_id
+        NEW_DB_ID=$(echo "$DB_RESULT" | grep -o 'database_id.*=.*"[^"]*"' | cut -d'"' -f2)
+        if [ -n "$NEW_DB_ID" ]; then
+            echo -e "${GREEN}資料庫已創建，ID: $NEW_DB_ID${NC}"
+            
+            # 更新 wrangler.toml 文件中的 database_id
+            sed -i.bak "s/database_id = \"[^\"]*\"/database_id = \"$NEW_DB_ID\"/" wrangler.toml
+            rm wrangler.toml.bak 2>/dev/null || true
+            
+            # 使用新的 DB_ID
+            DB_ID=$NEW_DB_ID
+        else
+            echo -e "${YELLOW}警告: 無法提取新創建的資料庫 ID，請手動更新 wrangler.toml${NC}"
+        fi
+    }
 else
     echo -e "${GREEN}資料庫 $DB_NAME 已存在${NC}"
+    
+    # 從輸出中提取現有的 database_id
+    EXISTING_DB_ID=$(echo "$HAS_DB" | awk '{print $1}')
+    if [ -n "$EXISTING_DB_ID" ] && [ "$EXISTING_DB_ID" != "$DB_ID" ]; then
+        echo -e "${YELLOW}更新 wrangler.toml 中的資料庫 ID: $EXISTING_DB_ID${NC}"
+        sed -i.bak "s/database_id = \"[^\"]*\"/database_id = \"$EXISTING_DB_ID\"/" wrangler.toml
+        rm wrangler.toml.bak 2>/dev/null || true
+        DB_ID=$EXISTING_DB_ID
+    fi
 fi
+
+echo -e "${GREEN}✓ 資料庫檢查完成${NC}"
+
+# 5. 驗證並創建資料表
+echo -e "${YELLOW}5. 驗證並創建資料表...${NC}"
 
 # 確認 schema.sql 文件存在
 if [ ! -f "./schema.sql" ]; then
@@ -195,8 +236,18 @@ EOL
     echo -e "${GREEN}已創建預設 schema.sql 文件${NC}"
 fi
 
+# 檢查資料表是否存在
+echo -e "${YELLOW}檢查資料表是否存在...${NC}"
+TABLE_CHECK=$(npx wrangler d1 execute "$DB_NAME" --command="SELECT name FROM sqlite_master WHERE type='table' AND name='orders';" 2>/dev/null)
+
+if [[ "$TABLE_CHECK" == *"orders"* ]]; then
+    echo -e "${GREEN}資料表 'orders' 已存在${NC}"
+else
+    echo -e "${YELLOW}資料表不存在，將創建資料表...${NC}"
+fi
+
 # 執行資料庫初始化腳本
-echo -e "${YELLOW}初始化資料庫架構...${NC}"
+echo -e "${YELLOW}執行資料庫初始化腳本...${NC}"
 npx wrangler d1 execute "$DB_NAME" --file=./schema.sql
 if [ $? -ne 0 ]; then
     echo -e "${RED}資料庫初始化失敗${NC}"
@@ -204,8 +255,8 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}✓ 資料庫已初始化${NC}"
 
-# 5. 構建專案
-echo -e "${YELLOW}5. 構建專案...${NC}"
+# 6. 構建專案
+echo -e "${YELLOW}6. 構建專案...${NC}"
 npm run build
 if [ $? -ne 0 ]; then
     echo -e "${RED}構建失敗${NC}"
@@ -213,8 +264,8 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}✓ 專案已構建${NC}"
 
-# 6. 部署到 Cloudflare Workers
-echo -e "${YELLOW}6. 部署到 Cloudflare Workers...${NC}"
+# 7. 部署到 Cloudflare Workers
+echo -e "${YELLOW}7. 部署到 Cloudflare Workers...${NC}"
 npx wrangler deploy
 if [ $? -ne 0 ]; then
     echo -e "${RED}部署失敗${NC}"
