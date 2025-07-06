@@ -15,7 +15,7 @@
 		"@cloudflare/d1": "1.4.1",
 		"@cloudflare/workers-types": "^4.20240418.0",
 		"@nestjs/common": "^10.0.0",
-		"@nestjs/core": "^10.0.0",
+		"@nestjs/core": "^10.4.19",
 		"itty-router": "^4.0.27",
 		"reflect-metadata": "^0.2.1",
 		"rxjs": "^7.8.1",
