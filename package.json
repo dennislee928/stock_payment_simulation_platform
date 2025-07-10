@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@pinia/nuxt": "^0.5.1",
-    "@types/node": "^22.14.1",
+    "@types/node": "^22.15.32",
     "ant-design-vue": "^4.0.0-rc.6",
     "h3": "^1.15.1",
     "nuxt": "3.16.2",
