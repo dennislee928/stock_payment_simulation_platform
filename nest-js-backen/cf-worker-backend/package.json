@@ -13,7 +13,7 @@
 	},
 	"dependencies": {
 		"@cloudflare/d1": "1.4.1",
-		"@cloudflare/workers-types": "^4.20250719.0",
+		"@cloudflare/workers-types": "^4.20250722.0",
 		"@nestjs/common": "^10.0.0",
 		"@nestjs/core": "^10.4.19",
 		"itty-router": "^4.0.27",
