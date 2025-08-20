@@ -11,14 +11,16 @@
     "prepare": "node vercel-build-prepare.js"
   },
   "dependencies": {
+
     "@pinia/nuxt": "^0.5.1",
-    "@types/node": "^22.14.1",
+    "@types/node": "^22.16.5",
+
     "ant-design-vue": "^4.0.0-rc.6",
-    "h3": "^1.15.1",
+    "h3": "^1.15.3",
     "nuxt": "3.16.2",
     "pinia": "^2.1.7",
-    "vue": "^3.4.15",
-    "vue-router": "^4.2.5"
+    "vue": "^3.5.18",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
